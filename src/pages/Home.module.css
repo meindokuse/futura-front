@@ -1,0 +1,567 @@
+/* HomePage.module.css */
+
+.homepage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Typography */
+  .title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-main);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    position: relative;
+    text-align: center;
+  }
+  
+  .title::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background: var(--primary);
+  }
+  
+  .sectionTitle {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-main);
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    position: relative;
+    display: inline-block;
+  }
+  
+  .sectionTitle::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--primary);
+  }
+  
+/* Header */
+.header {
+  padding: 4rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Центрируем по горизонтали */
+  justify-content: center; /* Центрируем по вертикали */
+  text-align: center; /* Центрируем текст внутри */
+}
+
+.logo {
+  width: 12rem;
+  height: 12rem;
+  opacity: 0;
+  margin: 0 auto; /* Автоматические отступы по бокам для центрирования */
+  display: block; /* Делаем блочным для правильного центрирования */
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block; /* Убираем лишнее пространство под изображением */
+}
+  
+  .logo.animated {
+    animation: slideInRight 1.5s ease-out forwards;
+  }
+  
+  /* Sections */
+  .section {
+    padding: 4rem 1.5rem;
+  }
+  
+  /* Restaurant Section */
+  .restaurantsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  
+  .restaurantCard {
+    background-color: var(--bg-card);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+    opacity: 0;
+  }
+  
+  .restaurantCard:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(200, 58, 10, 0.3);
+    transform: translateY(-5px);
+  }
+  
+  .restaurantImage {
+    height: 13rem;
+    overflow: hidden;
+  }
+  
+  .restaurantImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s;
+  }
+  
+  .restaurantImage img:hover {
+    transform: scale(1.05);
+  }
+  
+  .restaurantInfo {
+    padding: 1.5rem;
+  }
+  
+  .description {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+  
+  .details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .detail {
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+  
+  .icon {
+    margin-right: 0.5rem;
+    color: var(--primary);
+  }
+  
+  /* Event Section */
+  .eventSection {
+    background-color: var(--bg-dark);
+  }
+  
+  .eventCardHorizontal {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin: 0 auto;
+    max-width: 900px;
+    border: 1px solid var(--border);
+  }
+  
+  .eventCardHorizontal:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(200, 58, 10, 0.3);
+    transform: translateY(-5px);
+  }
+  
+  .eventContent {
+    display: flex;
+    flex-grow: 1;
+    gap: 30px;
+  }
+  
+  .eventMainInfo {
+    flex: 2;
+  }
+  
+  .eventDescription {
+    color: var(--text-secondary);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+  
+  .eventDetails {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 200px;
+  }
+  
+  .eventDetail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-main);
+  }
+  
+  .learnMoreBtn {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 20px;
+    white-space: nowrap;
+  }
+  
+  .learnMoreBtn:hover {
+    background: var(--primary-hover);
+  }
+  
+  /* Contacts Section */
+  .contactsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 4rem;
+  }
+  
+  .contactCard {
+    background-color: var(--bg-card);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  
+  .contactCard:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(200, 58, 10, 0.3);
+    transform: translateY(-5px);
+  }
+  
+  .contactImage {
+    height: 16rem;
+    overflow: hidden;
+  }
+  
+  .contactImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .contactInfo {
+    padding: 1.5rem;
+  }
+  
+  .position {
+    color: var(--primary);
+    margin-bottom: 1rem;
+  }
+  
+  /* Address Card */
+  .addressCard {
+    max-width: 64rem;
+    margin: 0 auto;
+    background-color: var(--bg-card);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    border: 1px solid var(--border);
+  }
+  
+  .socialLinks {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .socialLink {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--bg-card-light);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: background-color 0.3s;
+  }
+  
+  .socialLink:hover {
+    background-color: var(--primary);
+  }
+
+
+
+
+/* Стили для плавающей кнопки и меню дней рождений */
+.floatingButton {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #c83a0a;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.floatingButton:hover {
+  background-color: #a83209;
+  transform: scale(1.1);
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: white;
+  color: #c83a0a;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.birthdaysPanel {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 33%;
+  height: 100vh;
+  background-color: #121212;
+  border-left: 2px solid #c83a0a;
+  z-index: 1001;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.birthdaysPanel.open {
+  right: 0;
+}
+
+.birthdaysHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.birthdaysHeader h3 {
+  color: white;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+}
+
+.birthdaysList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.birthdayCard {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.birthdayCard:hover {
+  background-color: rgba(200, 58, 10, 0.2);
+}
+
+.avatarContainer {
+  position: relative;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #c83a0a;
+}
+
+.dateBadge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background-color: #c83a0a;
+  color: white;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+.personInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.position {
+  color: #c83a0a;
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+}
+
+.name {
+  color: white;
+  font-weight: 500;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.lastName {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .birthdaysPanel {
+    width: 85%;
+  }
+  
+  .birthdayCard {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .personInfo {
+    align-items: center;
+  }
+  
+  .name {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .birthdaysPanel {
+    width: 100%;
+  }
+  
+  .floatingButton {
+    width: 50px;
+    height: 50px;
+    right: 15px;
+    bottom: 15px;
+  }
+}
+  
+  @media (max-width: 480px) {
+    .birthdaysPanel {
+      width: 100%;
+    }
+    
+    .floatingButton {
+      width: 50px;
+      height: 50px;
+      right: 15px;
+      bottom: 15px;
+    }
+  }
+  /* Animations */
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-100px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes slideInRight {
+    0% {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .visible {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .title {
+      font-size: 2.2rem;
+    }
+    
+    .sectionTitle {
+      font-size: 1.8rem;
+    }
+    
+    .eventCardHorizontal {
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .eventContent {
+      flex-direction: column;
+    }
+    
+    .learnMoreBtn {
+      margin-left: 0;
+      margin-top: 15px;
+      width: 100%;
+    }
+  }

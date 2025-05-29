@@ -1,0 +1,501 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #c83a0a;
+  --primary-hover: rgba(200, 58, 10, 0.1);
+  --bg-dark: #09090b;
+  --bg-card: #1e1e1e;
+  --bg-card-light: #27272a;
+  --text-main: #ffffff;
+  --text-secondary: #b0b0b0;
+  --border: #2e2e2e;
+}
+
+/* Base styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Montserrat', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+/* .homepage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Typography */
+/* h1, h2, h3 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-main);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  position: relative;
+  text-align: center;
+}
+
+h1::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 4px;
+  background: var(--primary);
+}
+
+h2 {
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  position: relative;
+  display: inline-block;
+}
+
+h2::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--primary);
+}
+
+h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Header */
+.header {
+  padding: 4rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo {
+  width: 12rem;
+  height: 12rem;
+  opacity: 0;
+}
+
+.logo.animated {
+  animation: slideInRight 1.5s ease-out forwards;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Sections */
+section {
+  padding: 4rem 1.5rem;
+}
+
+/* Animations */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Restaurant Section */
+.restaurants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.restaurant-card {
+  background-color: var(--bg-card);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.restaurant-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(200, 58, 10, 0.3);
+  transform: translateY(-5px);
+}
+
+.restaurant-image {
+  height: 13rem;
+  overflow: hidden;
+}
+
+.restaurant-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.restaurant-image img:hover {
+  transform: scale(1.05);
+}
+
+.restaurant-info {
+  padding: 1.5rem;
+}
+
+.description {
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.icon {
+  margin-right: 0.5rem;
+  color: var(--primary);
+}
+
+/* Event Section */
+.event-section {
+  background-color: var(--bg-dark);
+}
+
+.event-card-horizontal {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  margin: 0 auto;
+  max-width: 900px;
+  border: 1px solid var(--border);
+}
+
+.event-card-horizontal:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(200, 58, 10, 0.3);
+  transform: translateY(-5px);
+}
+
+.event-content {
+  display: flex;
+  flex-grow: 1;
+  gap: 30px;
+}
+
+.event-main-info {
+  flex: 2;
+}
+
+.event-description {
+  color: var(--text-secondary);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.event-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-width: 200px;
+}
+
+.event-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-main);
+}
+
+.learn-more-btn {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 20px;
+  white-space: nowrap;
+}
+
+.learn-more-btn:hover {
+  background: var(--primary-hover);
+}
+
+/* Contacts Section */
+.contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.contact-card {
+  background-color: var(--bg-card);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.contact-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(200, 58, 10, 0.3);
+  transform: translateY(-5px);
+}
+
+.contact-image {
+  height: 16rem;
+  overflow: hidden;
+}
+
+.contact-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contact-info {
+  padding: 1.5rem;
+}
+
+.position {
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+.contact-details a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.contact-details a:hover {
+  color: var(--text-main);
+}
+
+/* Address Card */
+.address-card {
+  max-width: 64rem;
+  margin: 0 auto;
+  background-color: var(--bg-card);
+  border-radius: 0.5rem;
+  padding: 2rem;
+  border: 1px solid var(--border);
+}
+
+.social-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.social-link {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: var(--bg-card-light);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: background-color 0.3s;
+}
+
+.social-link:hover {
+  background-color: var(--primary);
+}
+
+/* Visibility and Animations */
+.visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+
+/* Восстановление оригинальных стилей для шапки */
+header {
+  padding: 2rem 1.5rem; /* Уменьшенный padding */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem; /* Уменьшенный отступ */
+  opacity: 0;
+  transform: translateX(-100px);
+  animation: slideInLeft 0.8s ease-out forwards;
+}
+
+.logo {
+  width: 12rem;
+  height: 12rem;
+  margin: 5rem ; /* Нормальные отступы */
+  opacity: 0;
+}
+
+.logo.animated {
+  animation: slideInRight 1.5s ease-out forwards;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Восстановление оригинальных анимаций карточек */
+.restaurant-card {
+  opacity: 0;
+  transform: translateX(-100px);
+  transition: all 0.7s;
+}
+
+.restaurant-card:nth-child(2) {
+  transform: translateY(100px);
+}
+
+.restaurant-card:nth-child(3) {
+  transform: translateX(100px);
+}
+
+.restaurant-card.visible {
+  opacity: 1;
+  transform: translate(0);
+}
+
+.contact-card {
+  opacity: 0;
+  transition: all 0.7s;
+}
+
+.contact-card:nth-child(1) {
+  transform: translateX(-100px);
+}
+
+.contact-card:nth-child(2) {
+  transform: translateY(100px);
+}
+
+.contact-card:nth-child(3) {
+  transform: translateX(100px);
+}
+
+.contact-card.visible {
+  opacity: 1;
+  transform: translate(0);
+}
+
+/* Ключевые кадры анимаций */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.2rem;
+  }
+  
+  h2 {
+    font-size: 1.8rem;
+  }
+  
+  h3 {
+    font-size: 1.3rem;
+  }
+  
+  .event-card-horizontal {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .event-content {
+    flex-direction: column;
+  }
+  
+  .learn-more-btn {
+    margin-left: 0;
+    margin-top: 15px;
+    width: 100%;
+  }
+  
+  .address-content {
+    flex-direction: column;
+  }
+} 
