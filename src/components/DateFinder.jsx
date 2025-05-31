@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 
 const DateFinder = ({ value, onChange, onSubmit }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const prevValueRef = useRef(value);
+
+  // Автоматически вызываем onSubmit только при реальном изменении даты
+  useEffect(() => {
+    if (value && value !== prevValueRef.current) {
+      onSubmit(value);
+      prevValueRef.current = value;
+    }
+  }, [value, onSubmit]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -13,7 +22,13 @@ const DateFinder = ({ value, onChange, onSubmit }) => {
 
   const handleClear = () => {
     onChange('');
-    onSubmit('')
+    onSubmit('');
+    prevValueRef.current = '';
+  };
+
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    onChange(newValue);
   };
 
   return (
@@ -31,7 +46,7 @@ const DateFinder = ({ value, onChange, onSubmit }) => {
           type="date"
           className="input"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}

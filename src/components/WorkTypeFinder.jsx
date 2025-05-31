@@ -15,7 +15,7 @@ const WorkTypeFinder = ({ value, onChange, onSubmit }) => {
   const handleChange = (e) => {
     const selectedValue = e.target.value;
     onChange(selectedValue);
-    onSubmit(selectedValue); // Сразу отправляем запрос
+    onSubmit(selectedValue); // Автоматический вызов при изменении
   };
 
   const handleKeyDown = (e) => {
@@ -25,8 +25,8 @@ const WorkTypeFinder = ({ value, onChange, onSubmit }) => {
   };
 
   const handleClear = () => {
-    onChange(''); // Очищаем выбор
-    onSubmit(''); // Отправляем пустой фильтр
+    onChange('');
+    onSubmit('');
   };
 
   return (
@@ -71,6 +71,8 @@ const WorkTypeFinder = ({ value, onChange, onSubmit }) => {
     </StyledWrapper>
   );
 };
+
+
 
 const StyledWrapper = styled.div`
   .label {

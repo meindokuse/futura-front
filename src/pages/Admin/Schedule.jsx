@@ -1,4 +1,4 @@
-import { useState, useEffect,useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Box, Typography, Button, Grid, CircularProgress, Pagination } from '@mui/material';
 import { Add } from '@mui/icons-material';
@@ -11,9 +11,8 @@ import WorkTypeFinder from '../../components/WorkTypeFinder';
 import { API_URL } from '../../utils/utils';
 import ScheduleEditDialog from '../../components/ScheduleEditDialog';
 
-
 export default function SchedulePage() {
-  const { handleNotification, currentLocation,mode } = useOutletContext();
+  const { handleNotification, currentLocation, mode } = useOutletContext();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -127,8 +126,6 @@ export default function SchedulePage() {
     }
   };
 
-
-
   const handleOpenCreateDialog = () => {
     setCurrentSchedule(null);
     setOpenCreateDialog(true);
@@ -155,12 +152,17 @@ export default function SchedulePage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ 
+      p: 3,
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 'calc(100vh - 64px)',
+      position: 'relative'
+    }}>
       <Typography variant="h4" sx={{ mb: 3, textAlign: 'center' }}>
         {currentLocation} - Расписание
       </Typography>
 
-      {/* Панель поиска и фильтров */}
       <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
           <Finder
@@ -182,23 +184,22 @@ export default function SchedulePage() {
         </Box>
         {mode === 'admin' && (
           <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleOpenCreateDialog}
-          sx={{ width: '200px', bgcolor: '#c83a0a', '&:hover': { bgcolor: '#e04b1a' } }}
-        >
-          Добавить смену
-        </Button>
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleOpenCreateDialog}
+            sx={{ width: '200px', bgcolor: '#c83a0a', '&:hover': { bgcolor: '#e04b1a' } }}
+          >
+            Добавить смену
+          </Button>
         )}
       </Box>
 
-      {/* Отображение загрузки или контента */}
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress size={60} />
-        </Box>
-      ) : (
-        <>
+      <Box sx={{ flex: 1 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <CircularProgress size={60} />
+          </Box>
+        ) : (
           <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
             {schedules.map(schedule => (
               <Grid item xs={12} sm={6} md={4} key={schedule.id}>
@@ -210,22 +211,52 @@ export default function SchedulePage() {
               </Grid>
             ))}
           </Grid>
+        )}
+      </Box>
 
-          {/* Пагинация */}
-          {pagination.total > pagination.limit && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-              <Pagination
-                count={Math.ceil(pagination.total / pagination.limit)}
-                page={pagination.page}
-                onChange={handlePageChange}
-                color="primary"
-              />
-            </Box>
-          )}
-        </>
+      {!loading && pagination.total > pagination.limit && (
+        <Box sx={{ 
+          position: 'sticky',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          py: 2,
+          zIndex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          mt: 2,
+          borderTop: '1px solid rgba(255, 255, 255, 0.12)'
+        }}>
+          <Pagination
+            count={Math.ceil(pagination.total / pagination.limit)}
+            page={pagination.page}
+            onChange={handlePageChange}
+            sx={{
+              '& .MuiPaginationItem-root': {
+                color: 'white',
+              },
+              '& .MuiPaginationItem-page.Mui-selected': {
+                backgroundColor: '#c83a0a',
+                '&:hover': {
+                  backgroundColor: '#e04b1a',
+                },
+              },
+              '& .MuiPaginationItem-page': {
+                '&:hover': {
+                  backgroundColor: 'rgba(200, 58, 10, 0.2)',
+                },
+              },
+              '& .MuiPaginationItem-ellipsis': {
+                color: 'white',
+              },
+              '& .MuiSvgIcon-root': {
+                color: 'white',
+              },
+            }}
+          />
+        </Box>
       )}
 
-      {/* Диалоги */}
       <ScheduleDialog
         open={openCreateDialog}
         onClose={() => setOpenCreateDialog(false)}

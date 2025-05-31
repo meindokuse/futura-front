@@ -651,7 +651,7 @@ export default function ProfilePage({ mode = 'your' }) {
           onClose={() => setOpenPhotoActionDialog(false)}
           userId={profile?.id}
           handleNotification={handleNotification}
-          onPhotoChange={handlePhotoChange}
+          onPhotoChange={() => setPhoto('../../../public/default-employer.jpg')}
           onOpenUploadDialog={() => {
             setOpenPhotoActionDialog(false);
             setOpenPhotoUploadDialog(true);
@@ -662,7 +662,7 @@ export default function ProfilePage({ mode = 'your' }) {
           onClose={() => setOpenPhotoUploadDialog(false)}
           userId={profile?.id}
           handleNotification={handleNotification}
-          onPhotoChange={setPhoto('../../../public/default-employer.jpg')}
+          onPhotoChange={handlePhotoChange}
         />
       </Box>
     </Box>

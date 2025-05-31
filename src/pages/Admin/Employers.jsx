@@ -1,4 +1,4 @@
-import { useState, useEffect,useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Box, Typography, Button, Grid, CircularProgress, Pagination } from '@mui/material';
 import { Add } from '@mui/icons-material';
@@ -7,8 +7,7 @@ import EmployeeDialog from '../../components/EmployeeDialog';
 import axios from 'axios';
 import Finder from '../../components/Finder';
 import WorkTypeFinder from '../../components/WorkTypeFinder';
-import {API_URL }from '../../utils/utils'
-
+import { API_URL } from '../../utils/utils';
 
 export default function Employers() {
   const { handleNotification, currentLocation, mode } = useOutletContext();
@@ -39,7 +38,7 @@ export default function Employers() {
   const fetchEmployees = async (fioFilter = '', workTypeFilter = '') => {
     try {
       if (fetchInProgress.current) return;
-       fetchInProgress.current = true;
+      fetchInProgress.current = true;
       const locationId = locationMapper[currentLocation];
       setLoading(true);
       const params = {
@@ -79,7 +78,6 @@ export default function Employers() {
   };
 
   useEffect(() => {
-    console.log(mode)
     fetchEmployees();
   }, [currentLocation, pagination.page, sort]);
 
@@ -139,10 +137,17 @@ export default function Employers() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ 
+      p: 3,
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: 'calc(100vh - 64px)',
+      position: 'relative'
+    }}>
       <Typography variant="h4" sx={{ mb: 3, textAlign: 'center' }}>
         {currentLocation}/Сотрудники
       </Typography>
+      
       <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
         <Grid container spacing={2} justifyContent="center" sx={{ maxWidth: '800px', width: '100%' }}>
           <Grid item xs={12} sm={6}>
@@ -163,25 +168,26 @@ export default function Employers() {
         </Grid>
         {mode === "admin" && (
           <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleOpenCreateDialog}
-          sx={{
-            width: '200px',
-            bgcolor: '#c83a0a',
-            '&:hover': { bgcolor: '#e04b1a' }
-          }}
-        >
-          Добавить
-        </Button>
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleOpenCreateDialog}
+            sx={{
+              width: '200px',
+              bgcolor: '#c83a0a',
+              '&:hover': { bgcolor: '#e04b1a' }
+            }}
+          >
+            Добавить
+          </Button>
         )}
       </Box>
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress size={60} />
-        </Box>
-      ) : (
-        <>
+
+      <Box sx={{ flex: 1 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <CircularProgress size={60} />
+          </Box>
+        ) : (
           <Grid container spacing={3}>
             {employees.map(employee => (
               <Grid item xs={12} sm={6} md={4} key={employee.id}>
@@ -193,18 +199,57 @@ export default function Employers() {
               </Grid>
             ))}
           </Grid>
-          {pagination.total > pagination.limit && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-              <Pagination
-                count={Math.ceil(pagination.total / pagination.limit)}
-                page={pagination.page}
-                onChange={handlePageChange}
-                color="primary"
-              />
-            </Box>
-          )}
-        </>
+        )}
+      </Box>
+
+      {!loading && pagination.total > pagination.limit && (
+        <Box sx={{ 
+          position: 'sticky',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          py: 2,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          zIndex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          mt: 2,
+          borderTop: '1px solid rgba(255, 255, 255, 0.12)'
+        }}>
+          <Pagination
+            count={Math.ceil(pagination.total / pagination.limit)}
+            page={pagination.page}
+            onChange={handlePageChange}
+            sx={{
+              '& .MuiPaginationItem-root': {
+                color: 'white',
+                fontSize: '1rem',
+              },
+              '& .MuiPaginationItem-page': {
+                backgroundColor: 'transparent',
+                '&:hover': {
+                  backgroundColor: 'rgba(200, 58, 10, 0.4)',
+                },
+              },
+              '& .MuiPaginationItem-page.Mui-selected': {
+                backgroundColor: '#c83a0a',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: '#e04b1a',
+                },
+              },
+              '& .MuiPaginationItem-ellipsis': {
+                color: 'white !important',
+              },
+              '& .MuiSvgIcon-root': {
+                color: 'white !important',
+                fontSize: '1.5rem',
+              },
+            }}
+          />
+        </Box>
       )}
+
       <EmployeeDialog
         open={openDialog}
         onClose={handleCloseDialog}

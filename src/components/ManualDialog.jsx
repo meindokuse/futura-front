@@ -20,6 +20,7 @@ import { useOutletContext } from 'react-router-dom';
 import { API_URL } from '../utils/utils';
 
 const locationMapper = [
+  { value: null, label: 'Общая' },
   { value: 1, label: 'Проспект мира' },
   { value: 2, label: 'Страстной' },
   { value: 3, label: 'Никольская' }
@@ -52,7 +53,7 @@ export default function ManualDialog({
           title: manual.title || '',
           description: manual.description || '',
           exp: manual.exp || '',
-          location_id: manual.location_id || null,
+          location_id: manual.location_id,
           file: null
         });
         if (manual.photo_id) {
@@ -88,16 +89,14 @@ export default function ManualDialog({
         return;
       }
 
-      // Получаем расширение файла из имени
       const fileExtension = file.name.split('.').pop().toLowerCase();
       
       setFormData(prev => ({
         ...prev,
         file,
-        exp: fileExtension // Автоматически устанавливаем расширение
+        exp: fileExtension
       }));
       
-      // Превью для изображений
       if (file.type.match('image.*')) {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -136,7 +135,6 @@ export default function ManualDialog({
     const newErrors = {};
     if (!formData.title) newErrors.title = 'Обязательное поле';
     if (!formData.exp) newErrors.exp = 'Не удалось определить расширение файла';
-    if (!formData.location_id) newErrors.location_id = 'Выберите локацию';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -149,7 +147,6 @@ export default function ManualDialog({
       let result;
 
       if (!manual) {
-        // Создание новой карточки
         const createResponse = await axios.post(
           `${API_URL}cards/admin/add_card`,
           {
@@ -163,7 +160,6 @@ export default function ManualDialog({
 
         result = createResponse.data;
 
-        // Загрузка файла после создания
         if (formData.file) {
           try {
             await uploadFile(result.id, formData.file, formData.exp);
@@ -172,7 +168,6 @@ export default function ManualDialog({
           }
         }
       } else {
-        // Обновление существующей карточки
         const updateResponse = await axios.put(
           `${API_URL}manuals/admin/update_manual?id=${manual.id}`,
           {
@@ -186,7 +181,6 @@ export default function ManualDialog({
 
         result = updateResponse.data;
 
-        // Загрузка файла при обновлении
         if (formData.file) {
           try {
             await uploadFile(manual.id, formData.file, formData.exp);
@@ -272,10 +266,9 @@ export default function ManualDialog({
 
           <FormControl fullWidth error={!!errors.location_id} sx={textFieldStyles}>
             <Select
-              value={formData.location_id || ''}
+              value={formData.location_id === undefined ? null : formData.location_id}
               name="location_id"
               onChange={handleChange}
-              displayEmpty
               sx={{
                 color: '#ffffff',
                 '& .MuiSelect-icon': { color: '#ffffff' }
@@ -296,11 +289,8 @@ export default function ManualDialog({
                 }
               }}
             >
-              <MenuItem value="" disabled>
-                Выберите локацию
-              </MenuItem>
               {locationMapper.map((loc) => (
-                <MenuItem key={loc.value} value={loc.value}>
+                <MenuItem key={loc.value || 'general'} value={loc.value}>
                   {loc.label}
                 </MenuItem>
               ))}

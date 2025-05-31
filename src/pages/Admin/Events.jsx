@@ -1,4 +1,4 @@
-import { useState, useEffect,useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Box, Typography, Button, Grid, CircularProgress, Pagination } from '@mui/material';
 import { Add } from '@mui/icons-material';
@@ -8,11 +8,10 @@ import EventDialog from '../../components/EventDialog';
 import Finder from '../../components/Finder';
 import DateFinder from '../../components/DateFinder';
 import LocationToggle from '../../components/Switcher';
-import {API_URL }from '../../utils/utils';
-
+import { API_URL } from '../../utils/utils';
 
 export default function EventsPage() {
-  const { handleNotification, currentLocation,mode } = useOutletContext();
+  const { handleNotification, currentLocation, mode } = useOutletContext();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -155,10 +154,17 @@ export default function EventsPage() {
   }
 
   return (
-    <Box sx={{ p: 3, minHeight: '100vh' }}>
+    <Box sx={{ 
+      p: 3, 
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      position: 'relative'
+    }}>
       <Typography variant="h4" sx={{ mb: 3, textAlign: 'center', color: '#ffffff' }}>
         {isGeneralEvent ? 'События' : `${currentLocation}/События`}
       </Typography>
+      
       <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
         <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: '1200px' }}>
           <Finder
@@ -180,25 +186,26 @@ export default function EventsPage() {
         </Box>
         {mode === "admin" && (
           <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={handleOpenCreateDialog}
-          sx={{
-            width: '200px',
-            bgcolor: '#c83a0a',
-            '&:hover': { bgcolor: '#e04b1a' }
-          }}
-        >
-          Добавить
-        </Button>
+            variant="contained"
+            startIcon={<Add />}
+            onClick={handleOpenCreateDialog}
+            sx={{
+              width: '200px',
+              bgcolor: '#c83a0a',
+              '&:hover': { bgcolor: '#e04b1a' }
+            }}
+          >
+            Добавить
+          </Button>
         )}
       </Box>
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress size={60} sx={{ color: '#c83a0a' }} />
-        </Box>
-      ) : (
-        <>
+
+      <Box sx={{ flex: 1 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <CircularProgress size={60} sx={{ color: '#c83a0a' }} />
+          </Box>
+        ) : (
           <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
             {events.map(event => (
               <Grid item xs={12} sm={6} md={4} key={event.id}>
@@ -210,18 +217,57 @@ export default function EventsPage() {
               </Grid>
             ))}
           </Grid>
-          {pagination.total > pagination.limit && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-              <Pagination
-                count={Math.ceil(pagination.total / pagination.limit)}
-                page={pagination.page}
-                onChange={handlePageChange}
-                sx={{ '& .MuiPaginationItem-root': { color: '#ffffff' } }}
-              />
-            </Box>
-          )}
-        </>
+        )}
+      </Box>
+
+      {!loading && pagination.total > pagination.limit && (
+        <Box sx={{ 
+          position: 'sticky',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          py: 2,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          zIndex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          mt: 2,
+          borderTop: '1px solid rgba(255, 255, 255, 0.12)'
+        }}>
+          <Pagination
+            count={Math.ceil(pagination.total / pagination.limit)}
+            page={pagination.page}
+            onChange={handlePageChange}
+            sx={{
+              '& .MuiPaginationItem-root': {
+                color: 'white',
+                fontSize: '1rem',
+              },
+              '& .MuiPaginationItem-page': {
+                backgroundColor: 'transparent',
+                '&:hover': {
+                  backgroundColor: 'rgba(200, 58, 10, 0.4)',
+                },
+              },
+              '& .MuiPaginationItem-page.Mui-selected': {
+                backgroundColor: '#c83a0a',
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: '#e04b1a',
+                },
+              },
+              '& .MuiPaginationItem-ellipsis': {
+                color: 'white !important',
+              },
+              '& .MuiSvgIcon-root': {
+                color: 'white !important',
+                fontSize: '1.5rem',
+              },
+            }}
+          />
+        </Box>
       )}
+
       <EventDialog
         open={openDialog}
         onClose={handleCloseDialog}
