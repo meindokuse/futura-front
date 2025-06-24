@@ -1,11 +1,31 @@
 import { NavLink as BaseNavLink, Outlet } from 'react-router-dom';
 import { useState,useEffect } from 'react';
-import { Box, styled, Menu, MenuItem, Typography, IconButton } from '@mui/material';
-import { AccountCircle,LocationOn } from '@mui/icons-material';
+import { 
+  Box, 
+  styled, 
+  Menu, 
+  MenuItem, 
+  Typography, 
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  Divider,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
+import { 
+  AccountCircle, 
+  LocationOn, 
+  Menu as MenuIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
 import { Snackbar, Alert } from '@mui/material';
 import axios from 'axios';
 import { API_URL } from '../../utils/utils';
 
+// Стилизованные компоненты
 const StyledNav = styled('nav')(({ theme }) => ({
   backgroundColor: '#121212',
   padding: theme.spacing(2),
@@ -15,6 +35,7 @@ const StyledNav = styled('nav')(({ theme }) => ({
   boxShadow: theme.shadows[2],
   borderBottom: '2px solid #c83a0a',
   fontFamily: "'Montserrat', sans-serif",
+  position: 'relative',
 }));
 
 const LogoLink = styled(BaseNavLink)(({ theme }) => ({
@@ -27,6 +48,11 @@ const LogoLink = styled(BaseNavLink)(({ theme }) => ({
   },
   '&:hover img': {
     transform: 'scale(1.1)'
+  },
+  [theme.breakpoints.down('md')]: {
+    position: 'absolute',
+    left: '50%',
+    transform: 'translateX(-50%)'
   }
 }));
 
@@ -36,12 +62,36 @@ const NavCenterContainer = styled(Box)(({ theme }) => ({
   gap: theme.spacing(1),
   position: 'absolute',
   left: '50%',
-  transform: 'translateX(-50%)'
+  transform: 'translateX(-50%)',
+  [theme.breakpoints.down('md')]: {
+    display: 'none'
+  }
+}));
+
+const MobileMenuButton = styled(IconButton)(({ theme }) => ({
+  color: 'white',
+  display: 'none',
+  [theme.breakpoints.down('md')]: {
+    display: 'block',
+    marginRight: 'auto' // Добавлено для выравнивания
+  }
+}));
+
+const RightContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  marginLeft: 'auto', // Добавлено для выравнивания
+  [theme.breakpoints.down('md')]: {
+    marginLeft: 0
+  }
 }));
 
 const NavDivider = styled(Box)(({ theme }) => ({
   color: 'rgba(255, 255, 255, 0.3)',
-  userSelect: 'none'
+  userSelect: 'none',
+  [theme.breakpoints.down('md')]: {
+    display: 'none'
+  }
 }));
 
 const NavItem = styled(BaseNavLink)(({ theme }) => ({
@@ -66,6 +116,13 @@ const NavItem = styled(BaseNavLink)(({ theme }) => ({
       height: '2px',
       backgroundColor: '#c83a0a'
     }
+  },
+  [theme.breakpoints.down('md')]: {
+    width: '100%',
+    padding: theme.spacing(2),
+    '&.active::after': {
+      display: 'none'
+    }
   }
 }));
 
@@ -88,10 +145,33 @@ const LocationIconButton = styled(IconButton)(({ theme }) => ({
   }
 }));
 
+const MobileDrawer = styled(Drawer)(({ theme }) => ({
+  '& .MuiDrawer-paper': {
+    backgroundColor: '#121212',
+    color: 'white',
+    width: '80%',
+    maxWidth: '300px',
+    padding: theme.spacing(2),
+    boxSizing: 'border-box',
+  },
+}));
+
+const CloseButton = styled(IconButton)(({ theme }) => ({
+  color: 'white',
+  alignSelf: 'flex-end',
+  marginBottom: theme.spacing(2),
+  '&:hover': {
+    color: '#c83a0a'
+  }
+}));
+
 export default function MainLayout() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const locations = ['Проспект мира', 'Страстной', 'Никольская'];
   const [locationAnchorEl, setLocationAnchorEl] = useState(null);
   const [profileAnchorEl, setProfileAnchorEl] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(locations[0]);
   const [isAdmin, setIsAdmin] = useState(false);
   
@@ -119,7 +199,7 @@ export default function MainLayout() {
   const checkAdmin = async () => {
       try {
         const response = await axios.get(`${API_URL}auth/check_admin`, {
-          withCredentials: true, // Для передачи куков
+          withCredentials: true,
         });
         setIsAdmin(response.status === 200);
       } catch (error) {
@@ -130,8 +210,6 @@ export default function MainLayout() {
   useEffect(() => {
     checkAdmin();
   }, []);
-
-
 
   const handleLocationClick = (event) => {
     setLocationAnchorEl(event.currentTarget);
@@ -169,26 +247,47 @@ export default function MainLayout() {
     setNotification(prev => ({ ...prev, open: false }));
   };
 
+  const toggleMobileMenu = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const navItems = [
+    { to: "/employers", label: "Работники" },
+    { to: "/schedule", label: "Расписание" },
+    { to: "/events", label: "События" },
+    { to: "/residents", label: "Постоянники" },
+    { to: "/manuals", label: "Методички" },
+  ];
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <StyledNav>
+        {isMobile && (
+          <MobileMenuButton 
+            onClick={toggleMobileMenu}
+            size="large"
+            aria-label="Открыть меню"
+          >
+            <MenuIcon fontSize="large" />
+          </MobileMenuButton>
+        )}
+
         <LogoLink to="/">
           <img src="/logo.svg" alt="HP Futura Logo" />
         </LogoLink>
 
-        <NavCenterContainer>
-          <NavItem to="/employers">Работники</NavItem>
-          <NavDivider>|</NavDivider>
-          <NavItem to="/schedule">Расписание</NavItem>
-          <NavDivider>|</NavDivider>
-          <NavItem to="/events">События</NavItem>
-          <NavDivider>|</NavDivider>
-          <NavItem to="/residents">Постоянники</NavItem>
-          <NavDivider>|</NavDivider>
-          <NavItem to="/manuals">Методички</NavItem>
-        </NavCenterContainer>
+        {!isMobile && (
+          <NavCenterContainer>
+            {navItems.map((item, index) => (
+              <Box key={item.to} sx={{ display: 'flex', alignItems: 'center' }}>
+                <NavItem to={item.to}>{item.label}</NavItem>
+                {index < navItems.length - 1 && <NavDivider>|</NavDivider>}
+              </Box>
+            ))}
+          </NavCenterContainer>
+        )}
 
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <RightContainer>
           <LocationIconButton 
             onClick={handleLocationClick}
             size="large"
@@ -266,8 +365,98 @@ export default function MainLayout() {
               Выход
             </MenuItem>
           </Menu>
-        </Box>
+        </RightContainer>
       </StyledNav>
+
+      {/* Мобильное меню */}
+      <MobileDrawer
+        anchor="left"
+        open={mobileOpen}
+        onClose={toggleMobileMenu}
+      >
+        <CloseButton onClick={toggleMobileMenu}>
+          <CloseIcon fontSize="large" />
+        </CloseButton>
+        
+        <List>
+          {navItems.map((item) => (
+            <ListItem key={item.to} disablePadding>
+              <ListItemButton 
+                component={BaseNavLink}
+                to={item.to}
+                onClick={toggleMobileMenu}
+                sx={{
+                  color: 'white',
+                  '&.active': {
+                    color: '#c83a0a',
+                    backgroundColor: 'rgba(200, 58, 10, 0.1)'
+                  }
+                }}
+              >
+                {item.label}
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+
+        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', my: 2 }} />
+
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton 
+              component={BaseNavLink}
+              to="/profile"
+              onClick={toggleMobileMenu}
+              sx={{
+                color: 'white',
+                '&.active': {
+                  color: '#c83a0a',
+                  backgroundColor: 'rgba(200, 58, 10, 0.1)'
+                }
+              }}
+            >
+              Профиль
+            </ListItemButton>
+          </ListItem>
+          {isAdmin && (
+            <ListItem disablePadding>
+              <ListItemButton 
+                component={BaseNavLink}
+                to="/admin"
+                onClick={toggleMobileMenu}
+                sx={{
+                  color: 'white',
+                  '&.active': {
+                    color: '#c83a0a',
+                    backgroundColor: 'rgba(200, 58, 10, 0.1)'
+                  }
+                }}
+              >
+                Админ панель
+              </ListItemButton>
+            </ListItem>
+          )}
+          <ListItem disablePadding>
+            <ListItemButton 
+              component={BaseNavLink}
+              to="/login"
+              onClick={() => {
+                toggleMobileMenu();
+                handleLogout();
+              }}
+              sx={{
+                color: 'white',
+                '&.active': {
+                  color: '#c83a0a',
+                  backgroundColor: 'rgba(200, 58, 10, 0.1)'
+                }
+              }}
+            >
+              Выход
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </MobileDrawer>
 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Outlet context={{ handleNotification, currentLocation }} />

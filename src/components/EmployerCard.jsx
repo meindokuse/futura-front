@@ -1,29 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
-import { 
-  Box, 
-  Typography, 
-  IconButton, 
-  useMediaQuery,
-  CircularProgress
-} from '@mui/material';
+import { Box, Typography, IconButton, useMediaQuery, CircularProgress } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import axios from 'axios';
-import { API_URL,capitalize } from '../utils/utils';
-import { useOutletContext } from 'react-router-dom';
+import { API_URL, capitalize } from '../utils/utils';
+import { useOutletContext,useNavigate } from 'react-router-dom';
 
-// Создаем кеш на уровне модуля (будет общий для всех экземпляров компонента)
 const photoCache = {};
 
-export default function EmployerCard({ employee, onEdit, onDelete }) {
+export default function EmployerCard({ employee, onEdit, onDelete, })  {
   const { mode } = useOutletContext();
   const [photoUrl, setPhotoUrl] = useState(null);
   const [loadingPhoto, setLoadingPhoto] = useState(true);
-  const isSmallScreen = useMediaQuery('(max-width:600px)');
+  const isMobile = useMediaQuery('(max-width:600px)');
   const abortControllerRef = useRef(null);
+   const navigate = useNavigate();
+
+  const handleClick = () => { 
+    navigate(`/profile/${employee.id}`);
+  };
 
   useEffect(() => {
     const fetchPhoto = async () => {
-      // Проверяем кеш перед запросом
+      if (employee.photo && employee.photo instanceof Blob) {
+        setPhotoUrl(URL.createObjectURL(employee.photo));
+        setLoadingPhoto(false);
+        return;
+      }
+
       if (photoCache[employee.id]) {
         setPhotoUrl(photoCache[employee.id]);
         setLoadingPhoto(false);
@@ -44,7 +47,6 @@ export default function EmployerCard({ employee, onEdit, onDelete }) {
         
         if (response.data?.file_url) {
           const url = response.data.file_url.url;
-          // Сохраняем в кеш
           photoCache[employee.id] = url;
           setPhotoUrl(url);
         }
@@ -63,166 +65,182 @@ export default function EmployerCard({ employee, onEdit, onDelete }) {
     fetchPhoto();
 
     return () => {
-      // Отменяем запрос при размонтировании
       abortControllerRef.current?.abort();
+      if (employee.photo && photoUrl) URL.revokeObjectURL(photoUrl);
     };
-  }, [employee.id]);
+  }, [employee.id, employee.photo]);
 
   const handleImageError = () => {
     setPhotoUrl(null);
   };
 
+  const getFontSize = (name) => {
+    const nameLength = name?.length || 0;
+    if (nameLength > 20) return isMobile ? '0.75rem' : '0.875rem';
+    if (nameLength > 15) return isMobile ? '0.875rem' : '1rem';
+    return isMobile ? '1rem' : '1.125rem';
+  };
+
   return (
     <Box sx={{ 
       width: '100%',
-      maxWidth: isSmallScreen ? '100%' : 300,
-      minWidth: 300,
-      minHeight: 500,
-      maxHeight: 500,
+      height: '100%',
+      minHeight: isMobile ? '320px' : '380px',
       display: 'flex',
       flexDirection: 'column',
-      backgroundColor: 'transparent',
-      border: '3px solid white',
-      borderRadius: '8px',
+      backgroundColor: 'rgba(30, 30, 30, 0.7)',
+      border: '1px solid rgba(255, 255, 255, 0.12)',
+      borderRadius: '12px',
       color: '#ffffff',
       transition: 'all 0.3s ease',
+      overflow: 'hidden',
       '&:hover': {
-        transform: 'translateY(-8px)',
+        transform: 'translateY(-4px)',
         boxShadow: '0 8px 24px rgba(200, 58, 10, 0.2)',
-        border: '3px solid rgb(200, 58, 10)',
+        borderColor: 'rgb(200, 58, 10)',
       }
     }}>
-      {/* Область фото */}
+      {/* Photo Area (50%) */}
       <Box sx={{
         width: '100%',
-        height: 100,
-        paddingTop: '90%',
+        height: '50%',
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: '#2a2a2a'
-      }}>
+        backgroundColor: '#2a2a2a',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}
+      onClick={handleClick}
+      >
         {loadingPhoto ? (
-          <Box sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#2a2a2a'
-          }}>
-            <CircularProgress color="inherit" />
-          </Box>
+          <CircularProgress size={32} color="inherit" />
         ) : photoUrl ? (
           <Box
             component="img"
             src={photoUrl}
             alt={employee.fio}
             sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
               width: '100%',
               height: '100%',
               objectFit: 'cover',
               objectPosition: 'center',
-              transform: 'translate(-50%, -50%)',
-              minWidth: '100%',
-              minHeight: '100%'
+              position: 'absolute',
+              top: 0,
+              left: 0
             }}
             onError={handleImageError}
           />
         ) : (
           <Box
             component="img"
-            src="/default-employer.jpg" // Используем абсолютный путь
+            src="/default-employer.jpg"
             alt={employee.fio}
             sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
               width: '100%',
               height: '100%',
               objectFit: 'cover',
               objectPosition: 'center',
-              transform: 'translate(-50%, -50%)',
-              minWidth: '100%',
-              minHeight: '100%'
+              position: 'absolute',
+              top: 0,
+              left: 0
             }}
           />
         )}
       </Box>
 
-      {/* Контент */}
+      {/* Content Area (50%) */}
       <Box sx={{ 
-        flexGrow: 1,
-        px: 3,
-        py: 2
+        height: '50%',
+        display: 'flex',
+        flexDirection: 'column',
+        p: isMobile ? 1.5 : 2,
+        overflow: 'hidden'
       }}>
-        <Typography 
-          gutterBottom 
-          variant={isSmallScreen ? 'h5' : 'h4'}
-          sx={{ 
-            fontWeight: 600,
-            lineHeight: 1.2,
-            fontSize: isSmallScreen ? '1.25rem' : '1.5rem'
-          }}
-        >
-          {capitalize(employee.fio)}
-        </Typography>
-        <Typography 
-          variant="body1"
-          sx={{ 
-            color: 'rgba(255, 255, 255, 0.7)',
-            fontSize: isSmallScreen ? '1rem' : '1.125rem'
-          }}
-        >
-          {capitalize(employee.work_type)}
-        </Typography>
-      </Box>
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography 
+            gutterBottom 
+            sx={{ 
+              fontWeight: 600,
+              lineHeight: 1.2,
+              fontSize: getFontSize(employee.fio),
+              mb: 1,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {capitalize(employee.fio)}
+          </Typography>
+          
+          <Typography 
+            variant="body2"
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.7)',
+              fontSize: isMobile ? '0.75rem' : '0.875rem',
+              mb: 1,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {capitalize(employee.work_type)}
+          </Typography>
+          
+          <Typography 
+            variant="body2"
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.5)',
+              fontSize: isMobile ? '0.65rem' : '0.75rem',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {employee.location_name || 'Не указано'}
+          </Typography>
+        </Box>
 
-      {/* Кнопки */}
-      { mode === 'admin' && (
-              <Box sx={{ 
-                display: 'flex',
-                justifyContent: 'flex-end',
-                px: 2,
-                py: 2
-              }}>
-                <IconButton 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(employee);
-                  }}
-                  size="large"
-                  sx={{ 
-                    color: '#ffffff',
-                    '&:hover': {
-                      color: 'rgb(200, 58, 10)'
-                    }
-                  }}
-                >
-                  <Edit fontSize={isSmallScreen ? 'medium' : 'large'} />
-                </IconButton>
-                <IconButton 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(employee.id);
-                  }}
-                  size="large"
-                  sx={{ 
-                    color: '#ffffff',
-                    '&:hover': {
-                      color: 'rgb(200, 58, 10)'
-                    }
-                  }}
-                >
-                  <Delete fontSize={isSmallScreen ? 'medium' : 'large'} />
-                </IconButton>
-              </Box>
-      )}
+        {mode === 'admin' && (
+          <Box sx={{ 
+            display: 'flex',
+            justifyContent: 'flex-end',
+            mt: 'auto',
+            pt: 1
+          }}>
+            <IconButton 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(employee);
+              }}
+              size="small"
+              sx={{ 
+                color: 'inherit',
+                '&:hover': { color: 'rgb(200, 58, 10)' }
+              }}
+            >
+              <Edit fontSize={isMobile ? 'small' : 'medium'} />
+            </IconButton>
+            <IconButton 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(employee.id);
+              }}
+              size="small"
+              sx={{ 
+                color: 'inherit',
+                '&:hover': { color: 'rgb(200, 58, 10)' }
+              }}
+            >
+              <Delete fontSize={isMobile ? 'small' : 'medium'} />
+            </IconButton>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -12,57 +12,111 @@ import {
   DialogActions
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
-
-
+import { API_URL } from '../../utils/utils';
+import axios from 'axios';
 
 export default function ProfileDialog({ 
   open, 
   onClose, 
-  onSave, 
   initialValue, 
   handleNotification,
-  type 
+  type,
+  userId
 }) {
   const [value, setValue] = useState(initialValue || '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Автоматическое форматирование телефона
+  useEffect(() => {
+    if (type === 'contacts' && value) {
+      const numbers = value.replace(/\D/g, '');
+      let formatted = '+7 (';
+      
+      if (numbers.length > 1) {
+        formatted += numbers.substring(1, 4);
+      }
+      if (numbers.length >= 4) {
+        formatted += ') ' + numbers.substring(4, 7);
+      }
+      if (numbers.length >= 7) {
+        formatted += '-' + numbers.substring(7, 9);
+      }
+      if (numbers.length >= 9) {
+        formatted += '-' + numbers.substring(9, 11);
+      }
+      
+      setValue(formatted);
+    }
+  }, [value, type]);
+
   const validate = () => {
-    if (!value) {
+    if (!value.trim()) {
       setError(type === 'contacts' ? 'Контакты обязательны' : 'Описание обязательно');
       return false;
     }
     if (type === 'contacts' && !/^\+7 \(\d{3}\) \d{3}-\d{2}-\d{2}$/.test(value)) {
-      setError('Формат: +7 (999) 123-45-67');
+      setError('Введите полный номер телефона');
       return false;
     }
     return true;
   };
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      await onSave(type === 'contacts' ? { contacts: value } : { description: value });
-      handleNotification(
-        type === 'contacts' 
-          ? 'Контакты успешно обновлены' 
-          : 'Описание успешно обновлено', 
-        'success'
-      );
-      onClose();
-    } catch (error) {
-      setError('Ошибка при сохранении');
-      handleNotification(
-        type === 'contacts' 
-          ? 'Ошибка при обновлении контактов' 
-          : 'Ошибка при обновлении описания', 
-        'error'
-      );
-    } finally {
-      setLoading(false);
+  const handleChange = (e) => {
+    const input = e.target.value;
+    if (type === 'contacts') {
+      if (input.replace(/\D/g, '').length > 11) return;
     }
+    setValue(input);
+    setError('');
   };
+
+  const handleSubmit = async () => {
+      if (!validate()) return;
+      setLoading(true);
+      
+      try {
+        // Подготавливаем данные в соответствии с EmployerUpdateBasic
+        const dataToUpdate = {
+          [type === 'contacts' ? 'contacts' : 'description']: 
+            type === 'contacts' ? [value] : value
+        };
+
+        const response = await axios.put(`${API_URL}employers/edit_employer`, dataToUpdate, {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.status === "ok") {
+          handleNotification(
+            type === 'contacts' 
+              ? 'Контакты успешно обновлены' 
+              : 'Описание успешно обновлено', 
+            'success'
+          );
+          onClose(true, type === 'contacts' ? [value] : value);
+        }
+      } catch (error) {
+        console.error('Ошибка при сохранении:', error);
+        
+        if (error.response?.status === 422) {
+          setError('Неверный формат данных');
+          handleNotification('Ошибка валидации данных', 'error');
+        } else {
+          setError('Ошибка при сохранении');
+          handleNotification(
+            type === 'contacts' 
+              ? 'Ошибка при обновлении контактов' 
+              : 'Ошибка при обновлении описания', 
+            'error'
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const textFieldStyles = {
     '& .MuiOutlinedInput-root': {
@@ -78,7 +132,7 @@ export default function ProfileDialog({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={() => onClose(false)}
       maxWidth={type === 'description' ? 'sm' : 'xs'}
       fullWidth
       PaperProps={{ sx: { 
@@ -98,7 +152,7 @@ export default function ProfileDialog({
         <Typography variant="h6" fontWeight="bold" sx={{ color: '#c83a0a' }}>
           {type === 'contacts' ? 'Редактировать контакты' : 'Редактировать описание'}
         </Typography>
-        <IconButton sx={{ color: '#ffffff', '&:hover': { color: '#c83a0a' } }} onClick={onClose}>
+        <IconButton sx={{ color: '#ffffff', '&:hover': { color: '#c83a0a' } }} onClick={() => onClose(false)}>
           <Close />
         </IconButton>
       </DialogTitle>
@@ -121,19 +175,22 @@ export default function ProfileDialog({
         )}
         <TextField
           fullWidth
-          label={type === 'contacts' ? 'Контакты' : 'Описание'}
+          label={type === 'contacts' ? 'Телефон' : 'Описание'}
           value={value}
-          onChange={(e) => { setValue(e.target.value); setError(''); }}
+          onChange={handleChange}
           error={!!error}
-          helperText={type === 'contacts' ? error || 'Формат: +7 (999) 123-45-67' : error}
+          helperText={error || (type === 'contacts' ? 'Формат: +7 (999) 123-45-67' : '')}
           multiline={type === 'description'}
           rows={type === 'description' ? 4 : 1}
           sx={textFieldStyles}
           margin="normal"
+          inputProps={{
+            maxLength: type === 'contacts' ? 18 : undefined
+          }}
         />
       </DialogContent>
       <DialogActions sx={{ p: 2, borderTop: '1px solid #c83a0a' }}>
-        <Button sx={{ color: '#ffffff', '&:hover': { color: '#c83a0a' } }} onClick={onClose}>
+        <Button sx={{ color: '#ffffff', '&:hover': { color: '#c83a0a' } }} onClick={() => onClose(false)}>
           Отмена
         </Button>
         <Button

@@ -27,6 +27,7 @@ import dayjs from 'dayjs';
 import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
 import { API_URL, capitalize, compressImage } from '../utils/utils';
+import CropImageDialog from './CropImageDialog';
 
 // Константы
 const roleOptions = [
@@ -74,7 +75,7 @@ export default function EmployerDialog({
   onSave,
   employee,
   locationId,
-  isAdminEdit = true // Флаг для различия между админ-редактированием и ЛК
+  isAdminEdit = true
 }) {
   const { handleNotification } = useOutletContext();
   const fullScreen = useMediaQuery('(max-width:600px)');
@@ -83,6 +84,9 @@ export default function EmployerDialog({
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropImage, setCropImage] = useState(null);
+  const [cropping, setCropping] = useState(false);
 
   // Инициализация формы
   useEffect(() => {
@@ -96,11 +100,7 @@ export default function EmployerDialog({
           date_of_birth: employee.date_of_birth ? dayjs(employee.date_of_birth) : dayjs().subtract(18, 'year'),
           contacts: employee.contacts || [],
           description: employee.description || '',
-          photo: null,
-          ...(!isAdminEdit && { 
-            email: employee.email || '',
-            password: '' 
-          })
+          photo: null
         });
         if (employee.photo_id) {
           setPhotoPreview(`${API_URL}files/employer/${employee.id}/photo`);
@@ -110,7 +110,7 @@ export default function EmployerDialog({
         setPhotoPreview(null);
       }
     }
-  }, [open, employee, locationId, isAdminEdit]);
+  }, [open, employee, locationId]);
 
   // Обработчики
   const handleDialogClose = () => {
@@ -118,6 +118,8 @@ export default function EmployerDialog({
     setErrors({});
     setNewContact('');
     setPhotoPreview(null);
+    setCropOpen(false);
+    setCropImage(null);
     onClose();
   };
 
@@ -153,11 +155,28 @@ export default function EmployerDialog({
       return;
     }
 
-    setFormData(prev => ({ ...prev, photo: file }));
-    
     const reader = new FileReader();
-    reader.onloadend = () => setPhotoPreview(reader.result);
+    reader.onloadend = () => setCropImage(reader.result);
     reader.readAsDataURL(file);
+    setCropOpen(true);
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setCropping(true);
+    try {
+      console.log('Crop compl')
+      const compressedFile = await compressImage(croppedFile);
+      setFormData(prev => ({ ...prev, photo: compressedFile }));
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoPreview(reader.result);
+      reader.readAsDataURL(compressedFile);
+    } catch (error) {
+      handleNotification('Ошибка при сжатии изображения', 'error');
+    } finally {
+      setCropping(false);
+      setCropOpen(false);
+      setCropImage(null);
+    }
   };
 
   const handleAddContact = () => {
@@ -229,32 +248,16 @@ export default function EmployerDialog({
   const handleUpdate = async (data) => {
     setLoading(true);
     try {
-      // Для админ-редактирования
-      if (isAdminEdit) {
-        await axios.put(
-          `${API_URL}employers/admin/edit_employer?employer_id=${employee.id}`,
-          {
-            roles: data.roles,
-            work_type: data.work_type,
-            location_id: data.location_id,
-            description: data.description || null
-          },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-      } 
-      // Для редактирования из ЛК
-      else {
-        await axios.put(
-          `${API_URL}employers/edit_profile?employer_id=${employee.id}`,
-          {
-            fio: data.fio,
-            email: data.email,
-            contacts: data.contacts,
-            description: data.description
-          },
-          { headers: { 'Content-Type': 'application/json' } }
-        );
-      }
+      await axios.put(
+        `${API_URL}employers/admin/edit_employer?employer_id=${employee.id}`,
+        {
+          roles: data.roles,
+          work_type: data.work_type,
+          location_id: data.location_id,
+          description: data.description || null
+        },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
 
       if (data.photo) {
         try {
@@ -298,11 +301,7 @@ export default function EmployerDialog({
       if (!formData.password) newErrors.password = 'Обязательное поле';
     }
     
-    if (!isAdminEdit && !formData.fio) {
-      newErrors.fio = 'Обязательное поле';
-    }
-    
-    if (isAdminEdit && !formData.work_type) {
+    if (!formData.work_type) {
       newErrors.work_type = 'Обязательное поле';
     }
     
@@ -310,9 +309,8 @@ export default function EmployerDialog({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Рендер полей в зависимости от режима
+  // Рендер полей для админ-режима
   const renderFields = () => {
-    // Создание сотрудника
     if (!employee) {
       return (
         <>
@@ -382,69 +380,20 @@ export default function EmployerDialog({
       );
     }
     
-    // Админ-редактирование
-    if (isAdminEdit) {
-      return (
-        <>
-          <WorkTypeSelect 
-            value={formData.work_type}
-            onChange={handleChange}
-            error={errors.work_type}
-          />
-          <RoleSelector 
-            roles={formData.roles} 
-            onChange={handleRoleChange} 
-          />
-          <LocationSelect 
-            value={formData.location_id}
-            onChange={handleChange}
-          />
-        </>
-      );
-    }
-    
-    // Редактирование из ЛК
     return (
       <>
-        <TextField
-          fullWidth
-          label="ФИО"
-          name="fio"
-          value={formData.fio}
+        <WorkTypeSelect 
+          value={formData.work_type}
           onChange={handleChange}
-          error={!!errors.fio}
-          helperText={errors.fio}
-          sx={textFieldStyles}
+          error={errors.work_type}
         />
-        <TextField
-          fullWidth
-          label="Email"
-          name="email"
-          value={formData.email}
+        <RoleSelector 
+          roles={formData.roles} 
+          onChange={handleRoleChange} 
+        />
+        <LocationSelect 
+          value={formData.location_id}
           onChange={handleChange}
-          sx={textFieldStyles}
-        />
-        <ContactManager
-          contacts={formData.contacts}
-          newContact={newContact}
-          onAdd={handleAddContact}
-          onChange={setNewContact}
-          onRemove={handleRemoveContact}
-        />
-        <TextField
-          fullWidth
-          label="Описание"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          multiline
-          rows={3}
-          sx={textFieldStyles}
-        />
-        <PhotoUpload 
-          photoPreview={photoPreview}
-          onChange={handlePhotoChange}
-          employee={employee}
         />
       </>
     );
@@ -462,11 +411,7 @@ export default function EmployerDialog({
       >
         <DialogTitle sx={{ p: 2, borderBottom: '1px solid #c83a0a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6" fontWeight="bold">
-            {employee 
-              ? isAdminEdit 
-                ? 'Редактирование сотрудника' 
-                : 'Редактирование профиля'
-              : 'Добавление сотрудника'}
+            {employee ? 'Редактирование сотрудника' : 'Добавление сотрудника'}
           </Typography>
           <IconButton sx={{ color: '#ffffff', '&:hover': { color: '#c83a0a' } }} onClick={handleDialogClose}>
             <Close />
@@ -510,6 +455,13 @@ export default function EmployerDialog({
           </Button>
         </DialogActions>
       </Dialog>
+      <CropImageDialog
+        open={cropOpen}
+        onClose={() => setCropOpen(false)}
+        image={cropImage}
+        onCropComplete={handleCropComplete}
+        loading={cropping}
+      />
     </LocalizationProvider>
   );
 }

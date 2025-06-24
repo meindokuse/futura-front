@@ -23,7 +23,7 @@ export default function EventsPage() {
   const fetchInProgress = useRef(false);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 2,
     total: 0
   });
 
@@ -227,7 +227,6 @@ export default function EventsPage() {
           left: 0,
           right: 0,
           py: 2,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
           zIndex: 1,
           display: 'flex',
           justifyContent: 'center',

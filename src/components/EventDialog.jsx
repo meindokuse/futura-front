@@ -224,23 +224,6 @@ const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
               </Select>
             </FormControl>
           </Box>
-
-          {!event && (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.location_id === null }
-                  onChange={handleGeneralEventChange}
-                  sx={{ 
-                    color: '#c83a0a',
-                    '&.Mui-checked': { color: '#c83a0a' }
-                  }}
-                />
-              }
-              label="Общее событие (без привязки к локации)"
-              sx={{ color: '#ffffff' }}
-            />
-          )}
         </Box>
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'space-between', py: 2, px: 3 }}>

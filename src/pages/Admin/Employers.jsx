@@ -209,7 +209,6 @@ export default function Employers() {
           left: 0,
           right: 0,
           py: 2,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
           zIndex: 1,
           display: 'flex',
           justifyContent: 'center',

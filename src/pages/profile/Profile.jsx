@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { useParams, useOutletContext } from 'react-router-dom';
+import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import EmailDialog from './EmailDialog';
@@ -21,7 +21,7 @@ import ProfileDialog from './ProfileDialog';
 import ScheduleCard from './ScheduleCard';
 import PhotoActionDialog from './PhotoActionDialog';
 import PhotoUploadDialog from './PhotoChange';
-import { API_URL,capitalize } from '../../utils/utils';
+import { API_URL, capitalize } from '../../utils/utils';
 
 // Настройка axios для отправки кук
 axios.defaults.withCredentials = true;
@@ -29,6 +29,7 @@ axios.defaults.withCredentials = true;
 export default function ProfilePage({ mode = 'your' }) {
   const { handleNotification } = useOutletContext();
   const { id } = useParams();
+  const navigate = useNavigate();
   const [tab, setTab] = useState(0);
   const [profile, setProfile] = useState(null);
   const [photo, setPhoto] = useState('');
@@ -67,24 +68,24 @@ export default function ProfilePage({ mode = 'your' }) {
     setError(prev => ({ ...prev, profile: null }));
 
     try {
-      const endpoint = mode === 'other' ? `${API_URL}profiles/${id}` : `${API_URL}auth/profile`;
+      const endpoint = mode === 'other' 
+        ? `${API_URL}employers/get_employer?id=${id}` 
+        : `${API_URL}auth/profile`;
+      
       const response = await axios.get(endpoint);
       const profileData = mode === 'other' ? response.data : response.data.user;
 
-      console.log("Пришло", response.data);
-      console.log('Преобразовано 1', profileData);
       const formattedProfile = {
         ...profileData,
         contacts: Array.isArray(profileData.contacts) ? profileData.contacts.join(', ') : profileData.contacts || ''
       };
-      console.log('Преобразовано 2', formattedProfile);
 
       setProfile(formattedProfile);
       return formattedProfile;
     } catch (err) {
       console.error('Ошибка загрузки профиля:', err);
       setError(prev => ({ ...prev, profile: 'Ошибка загрузки профиля' }));
-      handleNotification('error', 'Ошибка загрузки профиля');
+      handleNotification('Ошибка загрузки профиля', 'error');
       return null;
     } finally {
       setLoading(prev => ({ ...prev, profile: false }));
@@ -101,16 +102,16 @@ export default function ProfilePage({ mode = 'your' }) {
 
     try {
       const response = await axios.get(`${API_URL}files/employer/${userId}/get-photo`, {
-        params:{expansion:'png'},
+        params: { expansion: 'png' },
         withCredentials: true
       });
-      const url = response.data.file_url.url
+      const url = response.data.file_url.url;
       setPhoto(url);
       return url;
     } catch (err) {
       console.error('Ошибка загрузки фото:', err);
       setError(prev => ({ ...prev, photo: 'Ошибка загрузки фото' }));
-      handleNotification('error', 'Ошибка загрузки фото');
+      handleNotification('Ошибка загрузки фото', 'error');
       const fallbackPhoto = `../../../public/default-employer.jpg`;
       setPhoto(fallbackPhoto);
       return fallbackPhoto;
@@ -128,17 +129,29 @@ export default function ProfilePage({ mode = 'your' }) {
     setError(prev => ({ ...prev, schedule: null }));
 
     try {
-      const response = await axios.get(`${API_URL}workdays/get_week_schedule`, {
+      if (mode === 'your') {
+        const response = await axios.get(`${API_URL}workdays/get_week_schedule`, {
         params: {
           week: currentWeek.format('YYYY-MM-DD'),
-          userId: mode === 'other' ? id : undefined
-        }
-      });
-      setSchedules(response.data || []);
+        },
+        withCredentials: true
+        });
+        setSchedules(response.data || []);
+      }else {
+        const response = await axios.get(`${API_URL}workdays/get_week_schedule_employer`, {
+        params: {
+          week: currentWeek.format('YYYY-MM-DD'),
+          id: id 
+        },
+        withCredentials: true
+        });
+        setSchedules(response.data || []);
+      }
+      
     } catch (err) {
       console.error('Ошибка загрузки расписания:', err);
       setError(prev => ({ ...prev, schedule: 'Ошибка загрузки расписания' }));
-      handleNotification('Error', 'Ошибка загрузки расписания');
+      handleNotification('Ошибка загрузки расписания', 'error');
       setSchedules([]);
     } finally {
       setLoading(prev => ({ ...prev, schedule: false }));
@@ -146,24 +159,47 @@ export default function ProfilePage({ mode = 'your' }) {
     }
   };
 
+  const handleProfileSave = (success, newValue) => {
+    setOpenProfileDialog(false);
+    
+    if (success) {
+      setProfile(prev => {
+        const updatedValue = dialogType === 'contacts' 
+          ? newValue.join(', ') // Преобразуем массив в строку для отображения
+          : newValue;
+        
+        return {
+          ...prev,
+          [dialogType === 'contacts' ? 'contacts' : 'description']: updatedValue
+        };
+      });
+      
+      handleNotification(
+        dialogType === 'contacts' 
+          ? 'Контакты успешно обновлены' 
+          : 'Описание успешно обновлено', 
+        'success'
+      );
+    }
+  };
+
   const handleEmailSave = async ({ email }) => {
-  try {
-    // Обновляем состояние профиля
-    setProfile(prev => ({
-      ...prev,
-      email: email
-    }));
-    handleNotification('success', 'Email успешно обновлен');
-  } catch (error) {
-    console.error('Ошибка при обновлении email:', error);
-    handleNotification('error', 'Ошибка при обновлении email');
-    throw error; // Пробрасываем ошибку для обработки в EmailDialog
-  }
-};
+    try {
+      setProfile(prev => ({
+        ...prev,
+        email: email
+      }));
+      handleNotification('Email успешно обновлен', 'success');
+    } catch (error) {
+      console.error('Ошибка при обновлении email:', error);
+      handleNotification('Ошибка при обновлении email', 'error');
+      throw error;
+    }
+  };
 
   // Обработчик обновления фото
   const handlePhotoChange = async () => {
-    const url = await fetchPhoto(profile.id)
+    const url = await fetchPhoto(profile.id);
     setPhoto(url);
   };
 
@@ -176,7 +212,6 @@ export default function ProfilePage({ mode = 'your' }) {
       } else {
         setLoading(prev => ({ ...prev, photo: false }));
         setError(prev => ({ ...prev, photo: 'Профиль не загружен' }));
-        handleNotification('error', 'Профиль не загружен');
       }
     };
 
@@ -472,7 +507,7 @@ export default function ProfilePage({ mode = 'your' }) {
               </Box>
             </motion.div>
 
-            {/* Блок настроек */}
+            {/* Блок настроек (только для своего профиля) */}
             {mode === 'your' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -626,44 +661,49 @@ export default function ProfilePage({ mode = 'your' }) {
           </motion.div>
         )}
 
-        {/* Диалоговые окна */}
-        <EmailDialog
-          open={openEmailDialog}
-          onClose={() => setOpenEmailDialog(false)}
-          onSave={handleEmailSave}  
-          initialEmail={profile?.email}
-          handleNotification={handleNotification}
-        />
-        <PasswordDialog
-          open={openPasswordDialog}
-          onClose={() => setOpenPasswordDialog(false)}
-          handleNotification={handleNotification}
-        />
-        <ProfileDialog
-          open={openProfileDialog}
-          onClose={() => setOpenProfileDialog(false)}
-          initialValue={dialogType === 'contacts' ? profile?.contacts : profile?.description}
-          handleNotification={handleNotification}
-          type={dialogType}
-        />
-        <PhotoActionDialog
-          open={openPhotoActionDialog}
-          onClose={() => setOpenPhotoActionDialog(false)}
-          userId={profile?.id}
-          handleNotification={handleNotification}
-          onPhotoChange={() => setPhoto('../../../public/default-employer.jpg')}
-          onOpenUploadDialog={() => {
-            setOpenPhotoActionDialog(false);
-            setOpenPhotoUploadDialog(true);
-          }}
-        />
-        <PhotoUploadDialog
-          open={openPhotoUploadDialog}
-          onClose={() => setOpenPhotoUploadDialog(false)}
-          userId={profile?.id}
-          handleNotification={handleNotification}
-          onPhotoChange={handlePhotoChange}
-        />
+        {/* Диалоговые окна (только для своего профиля) */}
+        {mode === 'your' && (
+          <>
+            <EmailDialog
+              open={openEmailDialog}
+              onClose={() => setOpenEmailDialog(false)}
+              onSave={handleEmailSave}  
+              initialEmail={profile?.email}
+              handleNotification={handleNotification}
+            />
+            <PasswordDialog
+              open={openPasswordDialog}
+              onClose={() => setOpenPasswordDialog(false)}
+              handleNotification={handleNotification}
+            />
+            <ProfileDialog
+              open={openProfileDialog}
+              onClose={handleProfileSave}
+              initialValue={dialogType === 'contacts' ? profile?.contacts : profile?.description}
+              handleNotification={handleNotification}
+              type={dialogType}
+              userId={profile?.id}
+            />
+            <PhotoActionDialog
+              open={openPhotoActionDialog}
+              onClose={() => setOpenPhotoActionDialog(false)}
+              userId={profile?.id}
+              handleNotification={handleNotification}
+              onPhotoChange={() => setPhoto('../../../public/default-employer.jpg')}
+              onOpenUploadDialog={() => {
+                setOpenPhotoActionDialog(false);
+                setOpenPhotoUploadDialog(true);
+              }}
+            />
+            <PhotoUploadDialog
+              open={openPhotoUploadDialog}
+              onClose={() => setOpenPhotoUploadDialog(false)}
+              userId={profile?.id}
+              handleNotification={handleNotification}
+              onPhotoChange={handlePhotoChange}
+            />
+          </>
+        )}
       </Box>
     </Box>
   );

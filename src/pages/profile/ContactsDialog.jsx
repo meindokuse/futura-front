@@ -26,6 +26,7 @@ export default function ContactsDialog({ open, onClose, handleNotification }) {
   };
 
   const handleSubmit = async () => {
+    console.log('контакты 1')
     if (!contacts) {
       setError('Контакты обязательны');
       return;
@@ -38,6 +39,7 @@ export default function ContactsDialog({ open, onClose, handleNotification }) {
     
     setLoading(true);
     try {
+      console.log('контакты 2')
       const response = await axios.put(
         `${API_URL}edit_employer`,
         { contacts: [contacts] }, // Отправляем как массив
@@ -53,7 +55,7 @@ export default function ContactsDialog({ open, onClose, handleNotification }) {
       onClose();
     } catch (error) {
       console.error('Ошибка при обновлении контактов:', error);
-      const message = error.response?.data?.detail || 'Ошибка при обновлении контактов';
+      const message = error.response?.data?.detail || 'Ошибка при обновлении контактов блять';
       setError(message);
       handleNotification('error', message);
     } finally {

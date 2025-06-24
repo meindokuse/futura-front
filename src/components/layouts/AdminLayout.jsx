@@ -1,27 +1,51 @@
 import { NavLink as BaseNavLink, Outlet } from 'react-router-dom';
-import { Button, Box, styled, Menu, MenuItem, Typography, } from '@mui/material';
-import { useState,useEffect } from 'react';
+import { 
+  Button, 
+  Box, 
+  styled, 
+  Menu, 
+  MenuItem, 
+  Typography, 
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  Divider,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
+import { useState } from 'react';
 import { Snackbar, Alert } from '@mui/material';
-import {jwtDecode} from 'jwt-decode';
+import { Menu as MenuIcon, Close as CloseIcon, LocationOn } from '@mui/icons-material';
 
-
-// Стилизованные компоненты
 const StyledNav = styled('nav')(({ theme }) => ({
   backgroundColor: '#2a2a2a',
   padding: theme.spacing(2),
   display: 'flex',
-  justifyContent: 'center',
+  justifyContent: 'space-between',
   alignItems: 'center',
   position: 'relative',
   boxShadow: theme.shadows[2],
   borderBottom: '4px solid #c83a0a'
 }));
 
+
+const MobileMenuButton = styled(IconButton)(({ theme }) => ({
+  color: 'white',
+  position: 'absolute',
+  left: theme.spacing(2),
+  display: 'none',
+  [theme.breakpoints.down('md')]: {
+    display: 'block'
+  }
+}));
+
 const StyledNavLink = styled(BaseNavLink)(({ theme }) => ({
   color: 'white',
   textDecoration: 'none',
-  margin: theme.spacing(0, 2),
-  padding: theme.spacing(1, 3),
+  margin: theme.spacing(0, 1),
+  padding: theme.spacing(1, 2),
   borderRadius: '20px',
   transition: 'all 0.3s ease',
   '&:hover': {
@@ -33,40 +57,43 @@ const StyledNavLink = styled(BaseNavLink)(({ theme }) => ({
     boxShadow: theme.shadows[2],
     transform: 'scale(1.05)'
   },
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(1),
-    fontSize: '0.9rem'
+  [theme.breakpoints.down('md')]: {
+    width: '100%',
+    margin: 0,
+    borderRadius: 0,
+    padding: theme.spacing(2),
+    '&.active': {
+      transform: 'none'
+    }
   }
 }));
 
-const LogoutButton = styled(Button)(({ theme }) => ({
-  position: 'absolute',
-  left: theme.spacing(2),
+const MobileDrawer = styled(Drawer)(({ theme }) => ({
+  '& .MuiDrawer-paper': {
+    backgroundColor: '#2a2a2a',
+    color: 'white',
+    width: '80%',
+    maxWidth: '300px'
+  }
+}));
+
+const NavButton = styled(Button)(({ theme }) => ({
   color: 'white',
   borderColor: 'white',
   '&:hover': {
     borderColor: '#c83a0a',
-    backgroundColor: 'rgba(200, 58, 10, 0.1)'
+    color: '#c83a0a'
   }
 }));
 
-const LocationButton = styled(Button)(({ theme }) => ({
-  position: 'absolute',
-  right: theme.spacing(2),
-  color: 'white',
-  borderColor: 'white',
-  '&:hover': {
-    borderColor: '#c83a0a',
-    backgroundColor: 'rgba(200, 58, 10, 0.1)'
-  }
-}));
-
-export default function AdminLayout({mode}) {
+export default function AdminLayout({ mode }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileOpen, setMobileOpen] = useState(false);
   const locations = ['Проспект мира', 'Страстной', 'Никольская'];
   const [currentLocation, setCurrentLocation] = useState(locations[0]);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-
 
   const [notification, setNotification] = useState({
     open: false,
@@ -74,78 +101,71 @@ export default function AdminLayout({mode}) {
     severity: 'success'
   });
 
-  const handleNotification = (message, severity) => {
-    setNotification({ open: true, message, severity });
-  };
-
-  const handleCloseNotification = () => {
-    setNotification(prev => ({ ...prev, open: false }));
-  };
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
+  const toggleMobileMenu = () => setMobileOpen(!mobileOpen);
+  const handleNotification = (message, severity) => setNotification({ open: true, message, severity });
+  const handleCloseNotification = () => setNotification(prev => ({ ...prev, open: false }));
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
   const handleLocationSelect = (location) => {
     setCurrentLocation(location);
     handleClose();
   };
 
+  const navItems = [
+    { to: "/admin/employers", label: "Сотрудники" },
+    { to: "/admin/schedule", label: "Расписание" },
+    { to: "/admin/events", label: "События" },
+    { to: "/admin/residents", label: "Постоянники" },
+    { to: "/admin/manuals", label: "Методички" }
+  ];
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <StyledNav>
-        
+        <MobileMenuButton onClick={toggleMobileMenu}>
+          <MenuIcon fontSize="large" />
+        </MobileMenuButton>
 
-        
-      <LogoutButton 
-        variant="outlined" 
-        size="small"
-        component={BaseNavLink}
-        to="/"  
-        sx={{
-          color: 'white',
-          borderColor: 'white',
-          '&:hover': {
-            borderColor: '#c83a0a',
-            color: '#c83a0a'
-          }
-        }}
-      >
-        Выход
-      </LogoutButton>
-              
-        {/* Центральное меню */}
-        <Box sx={{ display: 'flex' }}>
-          <StyledNavLink to="/admin/employers">Сотрудники</StyledNavLink>
-          <StyledNavLink to="/admin/schedule">Расписание</StyledNavLink>
-          <StyledNavLink to="/admin/events">События</StyledNavLink>
-          <StyledNavLink to="/admin/residents">Постоянники</StyledNavLink>
-          <StyledNavLink to="/admin/manuals">Методички</StyledNavLink>
-        </Box>
-        
-        {/* Выпадающий список локаций справа */}
-        <LocationButton
+        <NavButton 
+          variant="outlined" 
+          size="small"
+          component={BaseNavLink}
+          to="/"
+          sx={{
+            position: 'absolute',
+            left: isMobile ? '60px' : '16px'
+          }}
+        >
+          Выход
+        </NavButton>
+
+        {!isMobile && (
+          <Box sx={{ display: 'flex', marginLeft: 'auto', marginRight: 'auto' }}>
+            {navItems.map(item => (
+              <StyledNavLink key={item.to} to={item.to}>
+                {item.label}
+              </StyledNavLink>
+            ))}
+          </Box>
+        )}
+
+        <NavButton
           variant="outlined"
           size="small"
           onClick={handleClick}
-          aria-controls={open ? 'location-menu' : undefined}
-          aria-haspopup="true"
-          aria-expanded={open ? 'true' : undefined}
+          sx={{
+            position: 'absolute',
+            right: '16px'
+          }}
         >
           {currentLocation}
-        </LocationButton>
+        </NavButton>
+
         <Menu
           id="location-menu"
           anchorEl={anchorEl}
           open={open}
           onClose={handleClose}
-          MenuListProps={{
-            'aria-labelledby': 'location-button',
-          }}
         >
           {locations.map((location) => (
             <MenuItem 
@@ -159,23 +179,48 @@ export default function AdminLayout({mode}) {
         </Menu>
       </StyledNav>
 
-      {/* Единый Outlet с объединенным контекстом */}
+      <MobileDrawer
+        anchor="left"
+        open={mobileOpen}
+        onClose={toggleMobileMenu}
+      >
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <IconButton onClick={toggleMobileMenu}>
+            <CloseIcon fontSize="large" sx={{ color: 'white' }} />
+          </IconButton>
+        </Box>
+        
+        <List>
+          {navItems.map((item) => (
+            <ListItem key={item.to} disablePadding>
+              <ListItemButton
+                component={BaseNavLink}
+                to={item.to}
+                onClick={toggleMobileMenu}
+                sx={{
+                  color: 'white',
+                  '&.active': {
+                    backgroundColor: '#c83a0a'
+                  }
+                }}
+              >
+                {item.label}
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </MobileDrawer>
+
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Outlet context={{ handleNotification, currentLocation,mode }} />
+        <Outlet context={{ handleNotification, currentLocation, mode }} />
       </Box>
 
-      {/* Уведомление */}
       <Snackbar
         open={notification.open}
         autoHideDuration={3000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert
-          onClose={handleCloseNotification}
-          severity={notification.severity}
-          sx={{ width: '100%' }}
-        >
+        <Alert severity={notification.severity}>
           {notification.message}
         </Alert>
       </Snackbar>

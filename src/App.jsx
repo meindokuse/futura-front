@@ -32,6 +32,8 @@ function AppRouter() {
           <Route path="residents" element={<Residents />} />
           <Route path="manuals" element={<Manuals />} />
           <Route path="profile" element={<ProfilePage  />} />
+          <Route path="profile/:id" element={<ProfilePage mode="other" />} />
+
         </Route>
         
         {/* Админ-панель (admin mode) */}
