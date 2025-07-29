@@ -38,7 +38,7 @@ const roleOptions = [
   { value: 'admin-residents', label: 'Админ постоянников' },
 ];
 
-const workTypeOptions = ['Бармен', 'Кальянщик', 'Хостес', 'Администратор'];
+const workTypeOptions = ['Бармен', 'Кальянный мастер', 'Хостес', 'Администратор','Менеджер','Помощник Бармена','Помощник кальянного мастера'];
 
 const locationMapper = [
   { value: 1, label: 'Проспект мира' },
@@ -214,6 +214,8 @@ export default function EmployerDialog({
   const handleCreate = async (data) => {
     setLoading(true);
     try {
+      console.log('рега')
+
       const response = await axios.post(
         `${API_URL}auth/admin/register`,
         {
@@ -232,6 +234,7 @@ export default function EmployerDialog({
 
       if (data.photo) {
         try {
+          console.log('загрузка фото')
           await uploadPhoto(response.data.id, data.photo);
           handleNotification('Сотрудник создан!', 'success');
         } catch {

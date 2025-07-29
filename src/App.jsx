@@ -14,6 +14,7 @@ import axios from 'axios';
 import { API_URL } from './utils/utils';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import ProfilePage from './pages/profile/Profile';
+import ScheduleAdminPage from './pages/admin/ScheduleAdmin';
 
 
 function AppRouter() {
@@ -44,7 +45,7 @@ function AppRouter() {
           }
         >
           <Route path="employers" element={<Employers />} />
-          <Route path="schedule" element={<Schedule />} />
+          <Route path="schedule" element={<ScheduleAdminPage />} />
           <Route path="events" element={<Events />} />
           <Route path="residents" element={<Residents />} />
           <Route path="manuals" element={<Manuals />} />

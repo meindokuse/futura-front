@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef,useMemo } from 'react';
 import { 
   Box, 
   Typography, 
@@ -8,7 +8,14 @@ import {
   Collapse,
   CircularProgress,
   useMediaQuery,
-  IconButton
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper
 } from '@mui/material';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -18,23 +25,20 @@ import axios from 'axios';
 import EmailDialog from './EmailDialog';
 import PasswordDialog from './PasswordDialog';
 import ProfileDialog from './ProfileDialog';
-import ScheduleCard from './ScheduleCard';
 import PhotoActionDialog from './PhotoActionDialog';
 import PhotoUploadDialog from './PhotoChange';
 import { API_URL, capitalize } from '../../utils/utils';
 
-// Настройка axios для отправки кук
 axios.defaults.withCredentials = true;
 
 export default function ProfilePage({ mode = 'your' }) {
-  const { handleNotification } = useOutletContext();
+  const { handleNotification, user } = useOutletContext();
   const { id } = useParams();
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
   const [profile, setProfile] = useState(null);
-  const [photo, setPhoto] = useState('');
+  const [photo, setPhoto] = useState('../../../public/default-employer.jpg');
   const [schedules, setSchedules] = useState([]);
-  const [weekOffset, setWeekOffset] = useState(0);
   const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('week'));
   const [loading, setLoading] = useState({
     profile: true,
@@ -112,42 +116,37 @@ export default function ProfilePage({ mode = 'your' }) {
       console.error('Ошибка загрузки фото:', err);
       setError(prev => ({ ...prev, photo: 'Ошибка загрузки фото' }));
       handleNotification('Ошибка загрузки фото', 'error');
-      const fallbackPhoto = `../../../public/default-employer.jpg`;
-      setPhoto(fallbackPhoto);
-      return fallbackPhoto;
     } finally {
       setLoading(prev => ({ ...prev, photo: false }));
       fetchInProgress.current.photo = false;
     }
   };
+  const handleImageError = () => {
+    setError(prev => ({ ...prev, photo: 'Ошибка загрузки фото' }));
+  };
 
-  // Функция загрузки расписания
-  const fetchScheduleData = async () => {
+  // Функция загрузки расписания на неделю
+  const fetchWeekSchedule = async () => {
     if (fetchInProgress.current.schedule) return;
     fetchInProgress.current.schedule = true;
     setLoading(prev => ({ ...prev, schedule: true }));
     setError(prev => ({ ...prev, schedule: null }));
 
     try {
-      if (mode === 'your') {
-        const response = await axios.get(`${API_URL}workdays/get_week_schedule`, {
-        params: {
-          week: currentWeek.format('YYYY-MM-DD'),
-        },
-        withCredentials: true
-        });
-        setSchedules(response.data || []);
-      }else {
-        const response = await axios.get(`${API_URL}workdays/get_week_schedule_employer`, {
-        params: {
-          week: currentWeek.format('YYYY-MM-DD'),
-          id: id 
-        },
-        withCredentials: true
-        });
-        setSchedules(response.data || []);
+      const params = {
+        week: currentWeek.format('YYYY-MM-DD')
+      };
+
+      const endpoint = mode === 'other' 
+        ? `${API_URL}workdays/get_week_schedule_employer` 
+        : `${API_URL}workdays/get_week_schedule`;
+
+      if (mode === 'other') {
+        params.id = id;
       }
-      
+
+      const response = await axios.get(endpoint, { params, withCredentials: true });
+      setSchedules(response.data || []);
     } catch (err) {
       console.error('Ошибка загрузки расписания:', err);
       setError(prev => ({ ...prev, schedule: 'Ошибка загрузки расписания' }));
@@ -159,13 +158,46 @@ export default function ProfilePage({ mode = 'your' }) {
     }
   };
 
+  // Группировка расписания по дням недели
+  const groupedSchedules = useMemo(() => {
+    const groups = {};
+    
+    schedules.forEach(schedule => {
+      const dateStr = dayjs(schedule.work_date).format('YYYY-MM-DD');
+      if (!groups[dateStr]) {
+        groups[dateStr] = [];
+      }
+      groups[dateStr].push(schedule);
+    });
+
+    return groups;
+  }, [schedules]);
+
+  // Получаем все дни текущей недели
+  const weekDays = useMemo(() => {
+    const days = [];
+    let currentDay = currentWeek.startOf('week');
+    
+    for (let i = 0; i < 7; i++) {
+      days.push({
+        date: currentDay,
+        dateStr: currentDay.format('YYYY-MM-DD'),
+        dayName: currentDay.format('dddd'),
+        isToday: currentDay.isSame(dayjs(), 'day')
+      });
+      currentDay = currentDay.add(1, 'day');
+    }
+    
+    return days;
+  }, [currentWeek]);
+
   const handleProfileSave = (success, newValue) => {
     setOpenProfileDialog(false);
     
     if (success) {
       setProfile(prev => {
         const updatedValue = dialogType === 'contacts' 
-          ? newValue.join(', ') // Преобразуем массив в строку для отображения
+          ? newValue.join(', ')
           : newValue;
         
         return {
@@ -197,7 +229,6 @@ export default function ProfilePage({ mode = 'your' }) {
     }
   };
 
-  // Обработчик обновления фото
   const handlePhotoChange = async () => {
     const url = await fetchPhoto(profile.id);
     setPhoto(url);
@@ -216,15 +247,14 @@ export default function ProfilePage({ mode = 'your' }) {
     };
 
     loadData();
-    fetchScheduleData();
+    fetchWeekSchedule();
   }, [id, mode]);
 
   // Загружаем расписание при изменении недели
   useEffect(() => {
-    fetchScheduleData();
+    fetchWeekSchedule();
   }, [currentWeek]);
 
-  // Очистка blob URL при размонтировании
   useEffect(() => {
     return () => {
       if (photo && photo.startsWith('blob:')) {
@@ -235,7 +265,6 @@ export default function ProfilePage({ mode = 'your' }) {
 
   const handleWeekChange = (offset) => {
     setCurrentWeek(currentWeek.add(offset, 'week'));
-    setWeekOffset(prev => prev + offset);
   };
 
   const handleOpenDialog = (type) => {
@@ -243,7 +272,6 @@ export default function ProfilePage({ mode = 'your' }) {
     setOpenProfileDialog(true);
   };
 
-  // Проверка глобальной ошибки
   if (error.profile && error.photo && error.schedule) {
     return (
       <Box sx={{ p: 3, textAlign: 'center', color: '#ffffff', background: 'transparent' }}>
@@ -254,7 +282,7 @@ export default function ProfilePage({ mode = 'your' }) {
             fetchProfileData().then(profileData => {
               if (profileData) fetchPhoto(profileData.id);
             });
-            fetchScheduleData();
+            fetchWeekSchedule();
           }}
           sx={{ mt: 2, backgroundColor: '#c83a0a', color: '#ffffff', '&:hover': { backgroundColor: '#e04b1a' } }}
         >
@@ -323,7 +351,7 @@ export default function ProfilePage({ mode = 'your' }) {
               ) : (
                 <Box
                   component="img"
-                  src={photo}
+                  src={error.photo ? '/default-employer.jpg' : photo}
                   alt="Фото профиля"
                   sx={{ 
                     width: 200, 
@@ -333,6 +361,7 @@ export default function ProfilePage({ mode = 'your' }) {
                     objectFit: 'cover',
                     boxShadow: '0 4px 20px rgba(200, 58, 10, 0.3)'
                   }}
+                  onError={handleImageError}
                 />
               )}
             </motion.div>
@@ -576,13 +605,12 @@ export default function ProfilePage({ mode = 'your' }) {
                   color: '#c83a0a',
                   fontWeight: 'bold'
                 }}>
-                  Расписание на {currentWeek.format('DD.MM.YYYY')}
+                  Расписание на неделю {currentWeek.format('DD.MM.YYYY')}
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button
                       onClick={() => handleWeekChange(-1)}
-                      disabled={weekOffset === 0}
                       sx={{ 
                         color: '#ffffff', 
                         border: '1px solid #ffffff',
@@ -591,12 +619,7 @@ export default function ProfilePage({ mode = 'your' }) {
                           color: '#c83a0a',
                           transform: 'translateY(-2px)'
                         },
-                        transition: 'all 0.3s ease',
-                        '&.Mui-disabled': { 
-                          color: '#ffffff', 
-                          borderColor: '#ffffff',
-                          opacity: 0.3
-                        }
+                        transition: 'all 0.3s ease'
                       }}
                     >
                       Предыдущая
@@ -631,37 +654,92 @@ export default function ProfilePage({ mode = 'your' }) {
                   <Typography sx={{ color: '#c83a0a' }}>{error.schedule}</Typography>
                   <Button
                     variant="contained"
-                    onClick={fetchScheduleData}
+                    onClick={fetchWeekSchedule}
                     sx={{ mt: 2, backgroundColor: '#c83a0a', color: '#ffffff', '&:hover': { backgroundColor: '#e04b1a' } }}
                   >
                     Повторить
                   </Button>
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {schedules.length > 0 ? (
-                    schedules.map((schedule, index) => (
-                      <motion.div
-                        key={schedule.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                      >
-                        <ScheduleCard schedule={schedule} />
-                      </motion.div>
-                    ))
-                  ) : (
-                    <Typography sx={{ color: '#ffffff', textAlign: 'center', p: 3 }}>
-                      Нет данных о расписании
-                    </Typography>
-                  )}
-                </Box>
+                <TableContainer component={Paper} sx={{ 
+                  backgroundColor: 'transparent',
+                  border: '1px solid #ffffff',
+                  borderRadius: '8px'
+                }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#1e1e1e' }}>
+                        <TableCell sx={{ color: '#ffffff', fontWeight: 'bold' }}>Дата</TableCell>
+                        <TableCell sx={{ color: '#ffffff', fontWeight: 'bold' }}>День недели</TableCell>
+                        <TableCell sx={{ color: '#ffffff', fontWeight: 'bold' }}>Смена</TableCell>
+                        <TableCell sx={{ color: '#ffffff', fontWeight: 'bold' }}>Локация</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {weekDays.map((day) => {
+                        const daySchedules = groupedSchedules[day.dateStr] || [];
+                        const isToday = day.date.isSame(dayjs(), 'day');
+                        
+                        return (
+                          <React.Fragment key={day.dateStr}>
+                            {daySchedules.length > 0 ? (
+                              daySchedules.map((schedule, idx) => (
+                                <TableRow 
+                                  key={`${day.dateStr}-${idx}`}
+                                  sx={{ 
+                                    backgroundColor: isToday ? 'rgba(200, 58, 10, 0.2)' : 'transparent',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(200, 58, 10, 0.3)'
+                                    }
+                                  }}
+                                >
+                                  <TableCell sx={{ color: '#ffffff' }}>
+                                    {idx === 0 && day.date.format('DD.MM.YYYY')}
+                                  </TableCell>
+                                  <TableCell sx={{ color: '#ffffff' }}>
+                                    {idx === 0 && capitalize(day.dayName)}
+                                  </TableCell>
+                                  <TableCell sx={{ color: '#ffffff' }}>
+                                    Смена {schedule.number_work}
+                                  </TableCell>
+                                  <TableCell sx={{ color: '#ffffff' }}>
+                                    {schedule.location_name}
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow 
+                                sx={{ 
+                                  backgroundColor: isToday ? 'rgba(200, 58, 10, 0.2)' : 'transparent',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(200, 58, 10, 0.1)'
+                                  }
+                                }}
+                              >
+                                <TableCell sx={{ color: '#ffffff' }}>
+                                  {day.date.format('DD.MM.YYYY')}
+                                </TableCell>
+                                <TableCell sx={{ color: '#ffffff' }}>
+                                  {capitalize(day.dayName)}
+                                </TableCell>
+                                <TableCell sx={{ color: '#ffffff', fontStyle: 'italic' }}>
+                                  Выходной
+                                </TableCell>
+                                <TableCell sx={{ color: '#ffffff' }}>-</TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               )}
             </Box>
           </motion.div>
         )}
 
-        {/* Диалоговые окна (только для своего профиля) */}
+        {/* Диалоговые окна */}
         {mode === 'your' && (
           <>
             <EmailDialog

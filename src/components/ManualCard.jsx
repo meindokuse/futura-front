@@ -24,31 +24,40 @@ export default function ManualCard({ manual, onEdit, onDelete }) {
   const [openModal, setOpenModal] = useState(false);
   const isSmallScreen = useMediaQuery('(max-width:600px)');
 
-  const handleDownload = async (e) => {
-    e.stopPropagation();
-    setIsDownloading(true);
-    try {
-      const response = await axios.get(
-        `${API_URL}files/manuals/${manual.id}/get-photo`,
-        { 
-          params: { expansion: manual.exp },
-          responseType: 'blob'
-        }
-      );
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${manual.title}.${manual.exp}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      console.error('Ошибка скачивания:', error);
-    } finally {
-      setIsDownloading(false);
+const handleDownload = async (e) => {
+  e.stopPropagation();
+  setIsDownloading(true);
+  try {
+    // 1. Получаем ссылку на файл от бэкенда
+    const response = await axios.get(
+      `${API_URL}files/manuals/${manual.id}/get-photo`,
+      { 
+        params: { expansion: manual.exp }
+      }
+    );
+
+    // 2. Проверяем, что получили валидную ссылку
+    if (!response.data?.file_url) {
+      throw new Error('Не удалось получить ссылку на файл');
     }
-  };
+
+    // 3. Создаем временную ссылку для скачивания
+    const downloadUrl = response.data.file_url.url;
+    console.log(downloadUrl)
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', `${manual.title}.${manual.exp}`);
+    link.setAttribute('target', '_blank'); // Открываем в новой вкладке
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+  } catch (error) {
+    console.error('Ошибка скачивания:', error);
+  } finally {
+    setIsDownloading(false);
+  }
+};
 
   const handleOpenModal = () => {
     setOpenModal(true);

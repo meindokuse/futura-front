@@ -6,10 +6,13 @@ const WorkTypeFinder = ({ value, onChange, onSubmit }) => {
 
   const workTypes = [
     { label: 'Все должности', value: '' },
-    { label: 'Кальянщик', value: 'кальянщик' },
+    { label: 'Кальянный мастер', value: 'кальянный мастер' },
+    { label: 'Помощник кальянного мастера', value: 'помощник кальянного мастера' },
     { label: 'Бармен', value: 'бармен' },
+    { label: 'Помощник Бармена', value: 'помощник бармена' },
     { label: 'Хостес', value: 'хостес' },
-    { label: 'Администратор', value: 'администратор' }
+    { label: 'Администратор', value: 'администратор' },
+    { label: 'Менеджер', value: 'менеджер' }
   ];
 
   const handleChange = (e) => {

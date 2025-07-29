@@ -1,33 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Box, Typography, Button, Grid, CircularProgress, Pagination } from '@mui/material';
-import { Add } from '@mui/icons-material';
-import ScheduleCard from '../../components/ScheduleCard';
-import ScheduleDialog from '../../components/ScheduleDialog';
+import { 
+  Box, Typography, Button, CircularProgress,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  IconButton, Grid
+} from '@mui/material';
+import { Search, Close, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import axios from 'axios';
-import Finder from '../../components/Finder';
-import DateFinder from '../../components/DateFinder';
-import WorkTypeFinder from '../../components/WorkTypeFinder';
 import { API_URL } from '../../utils/utils';
-import ScheduleEditDialog from '../../components/ScheduleEditDialog';
+import Finder from '../../components/Finder';
+import WorkTypeFinder from '../../components/WorkTypeFinder';
 
 export default function SchedulePage() {
-  const { handleNotification, currentLocation, mode } = useOutletContext();
-  const [schedules, setSchedules] = useState([]);
+  const { currentLocation } = useOutletContext();
+  const [workdays, setWorkdays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [openCreateDialog, setOpenCreateDialog] = useState(false);
-  const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [currentSchedule, setCurrentSchedule] = useState(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
   const [workTypeFilter, setWorkTypeFilter] = useState('');
-  const fetchInProgress = useRef(false);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0
-  });
 
   const locationMapper = {
     'Проспект мира': 1,
@@ -35,117 +26,119 @@ export default function SchedulePage() {
     'Никольская': 3
   };
 
-  const fetchSchedules = async (fioFilter = '', dateFilter = '', workTypeFilter = '') => {
+  // Получаем данные с сервера
+  const fetchWorkdays = async () => {
     try {
-      if (fetchInProgress.current) return;
-      fetchInProgress.current = true;
       setLoading(true);
-      const locationId = locationMapper[currentLocation];
-
-      const params = {
-        page: pagination.page,
-        limit: pagination.limit,
-        location_id: locationId
-      };
-
-      if (fioFilter.trim()) params.employer_fio = fioFilter.trim();
-      if (dateFilter.trim()) params.date = dateFilter.trim();
-      if (workTypeFilter.trim()) params.work_type = workTypeFilter.trim();
-
-      const response = await axios.get(`${API_URL}workdays/get_workday_filter`, { params });
-      setSchedules(response.data || []);
-      
-      setPagination(prev => ({
-        ...prev,
-        total: response.data.length < pagination.limit
-          ? (pagination.page - 1) * pagination.limit + response.data.length
-          : pagination.page * pagination.limit + 1
-      }));
+      const response = await axios.get(`${API_URL}workdays/get_workday_filter`, {
+        params: {
+          date_now: currentDate.toISOString().split('T')[0],
+          location_id: locationMapper[currentLocation],
+          employer_fio: searchTerm,
+          employer_work_type: workTypeFilter
+        }
+      });
+      setWorkdays(response.data);
     } catch (err) {
       setError(err.message);
-      handleNotification('Ошибка загрузки расписания', 'error');
     } finally {
-      fetchInProgress.current = false;
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSchedules();
-  }, [currentLocation, pagination.page]);
+    fetchWorkdays();
+  }, [currentDate, currentLocation, searchTerm, workTypeFilter]);
+
+  // Генерация дней месяца для заголовков таблицы
+  const daysInMonth = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysCount = new Date(year, month + 1, 0).getDate();
+    
+    return Array.from({ length: daysCount }, (_, i) => ({
+      day: i + 1,
+      date: new Date(year, month, i + 1)
+    }));
+  }, [currentDate]);
+
+  // Группировка смен по сотрудникам
+  const groupedWorkdays = useMemo(() => {
+    const groups = {};
+    
+    workdays.forEach(workday => {
+      if (!groups[workday.employer_id]) {
+        groups[workday.employer_id] = {
+          employer: workday.employer_fio,
+          work_type: workday.employer_work_type,
+          days: {}
+        };
+      }
+      const day = new Date(workday.work_date).getDate();
+      groups[workday.employer_id].days[day] = workday.number_work;
+    });
+    
+    return groups;
+  }, [workdays]);
+
+  // Уникальные сотрудники для строк таблицы
+  const employees = useMemo(() => 
+    Object.values(groupedWorkdays).sort((a, b) => a.employer.localeCompare(b.employer)),
+    [groupedWorkdays]
+  );
 
   const handleSearch = (term) => {
     setSearchTerm(term);
-    setPagination(prev => ({ ...prev, page: 1 }));
-    fetchSchedules(term, dateFilter, workTypeFilter);
-  };
-
-  const handleDateSearch = (date) => {
-    setDateFilter(date);
-    setPagination(prev => ({ ...prev, page: 1 }));
-    fetchSchedules(searchTerm, date, workTypeFilter);
   };
 
   const handleWorkTypeSearch = (workType) => {
     setWorkTypeFilter(workType);
-    setPagination(prev => ({ ...prev, page: 1 }));
-    fetchSchedules(searchTerm, dateFilter, workType);
   };
 
-  const handlePageChange = (_, newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+  const handleClearSearch = () => {
+    setSearchTerm('');
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`${API_URL}workdays/admin/delete_workday?id=${id}`);
-      handleNotification('Смена успешно удалена', 'success');
-      fetchSchedules(searchTerm, dateFilter, workTypeFilter);
-    } catch (err) {
-      handleNotification('Ошибка при удалении смены', 'error');
-    }
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() - 1);
+      return newDate;
+    });
   };
 
-  const handleCreate = async (data) => {
-    try {
-      fetchSchedules(searchTerm, dateFilter, workTypeFilter);
-      setOpenCreateDialog(false);
-    } catch (err) {
-      handleNotification('Ошибка при создании смены', 'error');
-    }
+  const handleNextMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
   };
 
-  const handleUpdate = async (updatedSchedule) => {
-    try {
-      await axios.put(`${API_URL}workdays/admin/update_workday`, updatedSchedule);
-      handleNotification('Смена успешно обновлена', 'success');
-      fetchSchedules(searchTerm, dateFilter, workTypeFilter);
-      setOpenEditDialog(false);
-    } catch (err) {
-      handleNotification('Ошибка при обновлении смены', 'error');
-    }
+  const handleCurrentMonth = () => {
+    setCurrentDate(new Date());
   };
 
-  const handleOpenCreateDialog = () => {
-    setCurrentSchedule(null);
-    setOpenCreateDialog(true);
-  };
-
-  const handleOpenEditDialog = (schedule) => {
-    setCurrentSchedule(schedule);
-    setOpenEditDialog(true);
-  };
+  const monthName = currentDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
 
   if (error) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography color="error">Ошибка загрузки: {error}</Typography>
-        <Button
-          variant="contained"
-          onClick={() => fetchSchedules(searchTerm, dateFilter, workTypeFilter)}
-          sx={{ mt: 2, width: '200px' }}
+      <Box sx={{ 
+        p: 3, 
+        textAlign: 'center', 
+        backgroundColor: 'transparent' 
+      }}>
+        <Typography color="error">Ошибка загрузки расписания: {error}</Typography>
+        <Button 
+          variant="contained" 
+          onClick={fetchWorkdays}
+          sx={{ 
+            mt: 2, 
+            bgcolor: '#c83a0a', 
+            '&:hover': { bgcolor: '#e04b1a' } 
+          }}
         >
-          Попробовать снова
+          Повторить попытку
         </Button>
       </Box>
     );
@@ -153,123 +146,194 @@ export default function SchedulePage() {
 
   return (
     <Box sx={{ 
-      p: 3,
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: 'calc(100vh - 64px)',
-      position: 'relative'
+      p: { xs: 2, md: 3 },
+      backgroundColor: 'transparent',
+      minHeight: '100vh',
+      color: 'white'
     }}>
-      <Typography variant="h4" sx={{ mb: 3, textAlign: 'center' }}>
-        {currentLocation} - Расписание
+      <Typography variant="h4" sx={{ 
+        mb: 3, 
+        textAlign: 'center',
+        color: 'white',
+        fontWeight: 'bold'
+      }}>
+        Расписание - {currentLocation}
       </Typography>
 
-      <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-          <Finder
-            findBy="ФИО"
-            value={searchTerm}
-            onChange={setSearchTerm}
-            onSubmit={handleSearch}
-          />
-          <DateFinder
-            value={dateFilter}
-            onChange={setDateFilter}
-            onSubmit={handleDateSearch}
-          />
-          <WorkTypeFinder
-            value={workTypeFilter}
-            onChange={setWorkTypeFilter}
-            onSubmit={handleWorkTypeSearch}
-          />
-        </Box>
-        {mode === 'admin' && (
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={handleOpenCreateDialog}
-            sx={{ width: '200px', bgcolor: '#c83a0a', '&:hover': { bgcolor: '#e04b1a' } }}
-          >
-            Добавить смену
-          </Button>
-        )}
-      </Box>
-
-      <Box sx={{ flex: 1 }}>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <CircularProgress size={60} />
+      {/* Фильтры и навигация */}
+      <Grid container spacing={2} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={6}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 2,
+            flexDirection: { xs: 'column', sm: 'row' }
+          }}>
+            <Finder
+              findBy="ФИО"
+              value={searchTerm}
+              onChange={setSearchTerm}
+              onSubmit={handleSearch}
+              onClear={handleClearSearch}
+              sx={{ flex: 1 }}
+            />
+            <WorkTypeFinder
+              value={workTypeFilter}
+              onChange={setWorkTypeFilter}
+              onSubmit={handleWorkTypeSearch}
+              sx={{ flex: 1, minWidth: '200px' }}
+            />
           </Box>
-        ) : (
-          <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
-            {schedules.map(schedule => (
-              <Grid item xs={12} sm={6} md={4} key={schedule.id}>
-                <ScheduleCard
-                  schedule={schedule}
-                  onEdit={() => handleOpenEditDialog(schedule)}
-                  onDelete={() => handleDelete(schedule.id)}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Box>
+        </Grid>
+        
+        <Grid item xs={12} md={6}>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: { xs: 'center', md: 'flex-end' },
+            gap: 1
+          }}>
+            <Button
+              variant="outlined"
+              onClick={handlePrevMonth}
+              startIcon={<ChevronLeft />}
+              sx={{
+                color: 'white',
+                borderColor: 'white',
+                '&:hover': {
+                  borderColor: '#c83a0a',
+                  color: '#c83a0a'
+                }
+              }}
+            >
+              Пред.
+            </Button>
+            
+            <Button
+              variant="contained"
+              onClick={handleCurrentMonth}
+              sx={{
+                mx: 1,
+                bgcolor: '#c83a0a',
+                '&:hover': { bgcolor: '#e04b1a' }
+              }}
+            >
+              Текущий
+            </Button>
+            
+            <Button
+              variant="outlined"
+              onClick={handleNextMonth}
+              endIcon={<ChevronRight />}
+              sx={{
+                color: 'white',
+                borderColor: 'white',
+                '&:hover': {
+                  borderColor: '#c83a0a',
+                  color: '#c83a0a'
+                }
+              }}
+            >
+              След.
+            </Button>
+          </Box>
+        </Grid>
+      </Grid>
 
-      {!loading && pagination.total > pagination.limit && (
-        <Box sx={{ 
-          position: 'sticky',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          py: 2,
-          zIndex: 1,
-          display: 'flex',
-          justifyContent: 'center',
-          mt: 2,
-          borderTop: '1px solid rgba(255, 255, 255, 0.12)'
-        }}>
-          <Pagination
-            count={Math.ceil(pagination.total / pagination.limit)}
-            page={pagination.page}
-            onChange={handlePageChange}
-            sx={{
-              '& .MuiPaginationItem-root': {
-                color: 'white',
-              },
-              '& .MuiPaginationItem-page.Mui-selected': {
-                backgroundColor: '#c83a0a',
-                '&:hover': {
-                  backgroundColor: '#e04b1a',
-                },
-              },
-              '& .MuiPaginationItem-page': {
-                '&:hover': {
-                  backgroundColor: 'rgba(200, 58, 10, 0.2)',
-                },
-              },
-              '& .MuiPaginationItem-ellipsis': {
-                color: 'white',
-              },
-              '& .MuiSvgIcon-root': {
-                color: 'white',
-              },
-            }}
-          />
+      <Typography variant="h5" sx={{ 
+        mb: 2, 
+        textAlign: 'center',
+        color: 'white'
+      }}>
+        {monthName}
+      </Typography>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress color="inherit" />
         </Box>
+      ) : (
+        <TableContainer sx={{ 
+          maxHeight: 'calc(100vh - 300px)', 
+          overflow: 'auto',
+          border: '1px solid white',
+          borderRadius: 2,
+          backgroundColor: 'transparent'
+        }}>
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ 
+                  minWidth: 200, 
+                  backgroundColor: '#1e1e1e', 
+                  color: 'white',
+                  borderColor: 'white'
+                }}>
+                  Сотрудник
+                </TableCell>
+                <TableCell sx={{ 
+                  minWidth: 150, 
+                  backgroundColor: '#1e1e1e', 
+                  color: 'white',
+                  borderColor: 'white'
+                }}>
+                  Должность
+                </TableCell>
+                {daysInMonth.map(({ day, date }) => (
+                  <TableCell 
+                    key={day} 
+                    align="center"
+                    sx={{ 
+                      minWidth: 50,
+                      fontWeight: date.getDay() === 0 || date.getDay() === 6 ? 'bold' : 'normal',
+                      color: date.getDay() === 0 ? '#ff4444' : 
+                            date.getDay() === 6 ? '#c83a0a' : 'white',
+                      backgroundColor: '#1e1e1e',
+                      borderColor: 'white'
+                    }}
+                  >
+                    {day}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {employees.map((employee, index) => (
+                <TableRow 
+                  key={`${employee.employer}-${index}`}
+                  sx={{
+                    '&:nth-of-type(odd)': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    },
+                    '&:hover': {
+                      backgroundColor: 'rgba(200, 58, 10, 0.2)',
+                    }
+                  }}
+                >
+                  <TableCell sx={{ color: 'white', borderColor: 'white' }}>
+                    {employee.employer}
+                  </TableCell>
+                  <TableCell sx={{ color: 'white', borderColor: 'white' }}>
+                    {employee.work_type}
+                  </TableCell>
+                  {daysInMonth.map(({ day }) => (
+                    <TableCell 
+                      key={day} 
+                      align="center"
+                      sx={{ 
+                        color: 'white',
+                        borderColor: 'white',
+                        bgcolor: employee.days[day] ? 'rgba(200, 58, 10, 0.3)' : 'transparent'
+                      }}
+                    >
+                      {employee.days[day] || ''}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
-
-      <ScheduleDialog
-        open={openCreateDialog}
-        onClose={() => setOpenCreateDialog(false)}
-        onSave={handleCreate}
-      />
-
-      <ScheduleEditDialog
-        open={openEditDialog}
-        onClose={() => setOpenEditDialog(false)}
-        workday={currentSchedule}
-        onSave={(updatedSchedule) => handleUpdate(updatedSchedule)}
-        currentLocation={locationMapper[currentLocation]}
-      />
     </Box>
   );
 }

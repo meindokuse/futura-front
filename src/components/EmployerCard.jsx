@@ -188,21 +188,6 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
           >
             {capitalize(employee.work_type)}
           </Typography>
-          
-          <Typography 
-            variant="body2"
-            sx={{ 
-              color: 'rgba(255, 255, 255, 0.5)',
-              fontSize: isMobile ? '0.65rem' : '0.75rem',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}
-          >
-            {employee.location_name || 'Не указано'}
-          </Typography>
         </Box>
 
         {mode === 'admin' && (
