@@ -56,11 +56,11 @@ export default function HomePage() {
     {
       id: 1,
       name: "Проспект Мира",
-      image: "pm.jpg",
+      image: "../../public/pm.jpg",
       images: [
-        "lists/rest1/foto1.jpg",
-        "lists/rest1/foto2.jpg",
-        "lists/rest1/foto3.jpg",
+        "../../public/lists/rest1/foto1.jpg",
+        "../../public/lists/rest1/foto2.jpg",
+        "../../public/lists/rest1/foto3.jpg",
       ],
       description: "Experience luxury dining with our Michelin star chef's exceptional cuisine.",
       address: "25 Luxury Avenue, Moscow",
@@ -70,11 +70,11 @@ export default function HomePage() {
     {
       id: 2,
       name: "Никольская",
-      image: "n.jpg",
+      image: "../../public/n.jpg",
       images: [
-        "lists/rest2/foto1.jpg",
-        "lists/rest2/foto2.jpg",
-        "lists/rest2/foto3.jpg",
+        "../../public/lists/rest2/foto1.jpg",
+        "../../public/lists/rest2/foto2.jpg",
+        "../../public/lists/rest2/foto3.jpg",
       ],
       description: "Modern European cuisine with a Russian twist in a stylish urban setting.",
       address: "42 City Center, Moscow",
@@ -86,9 +86,9 @@ export default function HomePage() {
       name: "Страстной",
       image: "../../public/st.jpg",
       images: [
-        "lists/rest3/foto1.jpg",
-        "lists/rest3/foto2.jpg",
-        "lists/rest3/foto3.jpg",
+        "../../public/lists/rest3/foto1.jpg",
+        "../../public/lists/rest3/foto2.jpg",
+        "../../public/lists/rest3/foto3.jpg",
       ],
       description: "A perfect blend of Asian and European flavors in an elegant atmosphere.",
       address: "7 Cultural District, Moscow",
@@ -104,7 +104,7 @@ export default function HomePage() {
       position: "Chief Executive Officer",
       email: "a.ivanova@hpfutura.ru",
       phone: "+7 (495) 123-4567",
-      photo: "peoples/p1.jpg",
+      photo: "../../public/peoples/p1.jpg",
     },
     {
       id: 2,
@@ -112,7 +112,7 @@ export default function HomePage() {
       position: "Chief Executive Officer",
       email: "a.ivanova@hpfutura.ru",
       phone: "+7 (495) 123-4567",
-      photo: "peoples/p2.jpg",
+      photo: "../../public/peoples/p2.jpg",
     },
     {
       id: 3,
@@ -120,8 +120,17 @@ export default function HomePage() {
       position: "Chief Executive Officer",
       email: "a.ivanova@hpfutura.ru",
       phone: "+7 (495) 123-4567",
-      photo: "peoples/p3.jpg",
+      photo: "../../public/peoples/p3.jpg",
     }
+  ];
+
+  //  !!!МОКОВЫЕ ДАННЫЕ!!!
+
+  const upcomingBirthdays = [
+    { id: 1, name: "Иванова Александра", position: "CEO", avatar: "../../public/default-employer.jpg", date: "15.05" },
+    { id: 2, name: "Петров Иван", position: "Менеджер", avatar: "../../public/default-employer.jpg", date: "18.05" },
+    { id: 3, name: "Сидорова Мария", position: "Шеф-повар", avatar: "../../public/default-employer.jpg", date: "20.05" },
+    { id: 4, name: "Кузнецов Дмитрий", position: "Бармен", avatar: "../../public/default-employer.jpg", date: "22.05" },
   ];
   
 

@@ -12,7 +12,7 @@ const residentPhotoCache = {};
 export default function ResidentCard({ client, onEdit, onDelete }) {
   const {mode} = useOutletContext();
   const [isFlipped, setIsFlipped] = useState(false);
-  const [imgSrc, setImgSrc] = useState('default-employer.jpg');
+  const [imgSrc, setImgSrc] = useState('/default-employer.jpg');
   const abortControllerRef = useRef(null);
 
   const handleFlip = () => {
@@ -20,7 +20,7 @@ export default function ResidentCard({ client, onEdit, onDelete }) {
   };
 
   const handleImageError = () => {
-    setImgSrc('default-employer.jpg');
+    setImgSrc('/default-employer.jpg');
   };
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function ResidentCard({ client, onEdit, onDelete }) {
       } catch (error) {
         if (!axios.isCancel(error)) {
           console.error('Ошибка загрузки фото:', error);
-          setImgSrc('default-employer.jpg');
+          setImgSrc('/default-employer.jpg');
         }
       }
     };

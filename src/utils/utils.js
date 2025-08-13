@@ -23,7 +23,7 @@ export const textFieldStyles = {
     '& .MuiInputBase-input': { color: '#ffffff' }
   };
 
-export const API_URL = 'http://localhost:8000/api';
+export const API_URL = 'http://185.161.65.243/api/';
 
 export const locationImages = {
   1: [

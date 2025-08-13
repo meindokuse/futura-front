@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import './Login.css'
 
 const placeholderImages = [
-  '../../public/login/foto1.JPG',
-   '../../public/login/foto2.jpg',
-   '../../public/login/foto3.jpg',
-   '../../public/login/foto4.jpg',
+  'login/foto1.JPG',
+   'login/foto2.jpg',
+   'login/foto3.jpg',
+   'login/foto4.jpg',
 ];
 
 const BackgroundCarousel = () => {
