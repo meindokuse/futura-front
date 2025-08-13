@@ -43,39 +43,51 @@ export default function PasswordDialog({ open, onClose, handleNotification }) {
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const response = await axios.post(
-        `${API_URL}auth/change-password`,
-        {
-          current_password: currentPassword,
-          new_password: newPassword
-        },
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+  if (!validate()) return;
+  setLoading(true);
+  setError('');
 
-      handleNotification('success', response.data.message || 'Пароль успешно обновлен');
+  try {
+    const response = await axios.post(
+      `${API_URL}auth/change-password`,
+      {
+        current_password: currentPassword,
+        new_password: newPassword
+      },
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    // Проверяем успешный ответ от сервера
+    if (response.data && response.data.success) { // или другой критерий успеха
+      handleNotification('success', 'Пароль успешно обновлен');
       onClose();
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
-      console.error('Ошибка при обновлении пароля:', error);
-      const message = error.response?.data?.detail || 
-                     error.response?.data?.message || 
-                     'Ошибка при обновлении пароля';
-      setError(message);
-      handleNotification('error', message);
-    } finally {
-      setLoading(false);
+    } else {
+      // Если сервер вернул ответ, но без флага успеха
+      const errorMessage = response.data?.message || 'Не удалось обновить пароль';
+      setError(errorMessage);
+      handleNotification('error', errorMessage);
     }
-  };
+    
+  } catch (error) {
+    console.error('Ошибка при обновлении пароля:', error);
+    const errorMessage = error.response?.data?.detail === "Неверный текущий пароль"
+      ? "Неверный текущий пароль"
+      : error.response?.data?.message || 'Ошибка при обновлении пароля';
+    
+    setError(errorMessage);
+    handleNotification('error', errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const textFieldStyles = {
     '& .MuiOutlinedInput-root': {

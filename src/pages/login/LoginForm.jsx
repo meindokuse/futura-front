@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserRound, LockKeyhole, LogIn } from 'lucide-react';
 import './Login.css';
+import { useNavigate } from 'react-router-dom';
 
 const LoginForm = ({
   onSubmit,
@@ -11,6 +12,8 @@ const LoginForm = ({
   loading,
   notification,
 }) => {
+  const navigate = useNavigate(); // Хук для редиректа
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(e);
@@ -61,8 +64,13 @@ const LoginForm = ({
               <input type="checkbox" disabled={loading} />
               <span>Запомнить меня</span>
             </label>
-            <a href="#" className="forgot-password">Забыли пароль?</a>
-          </div>
+            <a href="/forgot-password" className="forgot-password" onClick={(e) => {
+            e.preventDefault();
+            navigate('/forgot-password');
+          }}>
+            Забыли пароль?
+          </a>
+        </div>
           
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Загрузка...' : <><span>Войти</span><LogIn size={18} /></>}

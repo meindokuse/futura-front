@@ -14,62 +14,66 @@ const LoginPage = () => {
   const navigate = useNavigate(); // Хук для редиректа
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setNotification({ type: '', message: '' });
+  e.preventDefault();
+  setLoading(true);
+  setNotification({ type: '', message: '' });
 
-    try {
-      const formData = new FormData();
-      formData.append('username', username);
-      formData.append('password', password);
+  try {
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
 
-      const response = await axios.post(
-        `${API_URL}auth/token`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          withCredentials: true,
-        }
-      );
+    const response = await axios.post(
+      `${API_URL}auth/token`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+      }
+    );
 
-      // Сохраняем токен в localStorage
-      const { access_token } = response.data; // Предполагаем, что бэкенд возвращает access_token
+    // Проверяем статус ответа
+    if (response.data.status === true) {
+      // Успешная аутентификация
+      const { access_token } = response.data;
       localStorage.setItem('token', access_token);
-
+      
       setNotification({ type: 'success', message: 'Успешный вход!' });
       console.log('Успешный вход:', response.data);
-
-      // Редирект на /home после успешного логина
+      
       setTimeout(() => {
         navigate('/home');
-      }, 1000); // Небольшая задержка, чтобы пользователь увидел уведомление
-    } catch (error) {
-      console.error('Ошибка входа:', error);
-      let message = 'Ошибка входа. Проверьте данные.';
-      
-      if (error.response) {
-        const { status, data } = error.response;
-        if (status === 401) {
-          message = 'Неверное имя пользователя или пароль.';
-        } else if (status === 422) {
-          message = 'Некорректный формат данных. Проверьте введённые данные.';
-          if (data.detail) {
-            message = data.detail.map((err) => err.msg).join(' ') || message;
-          }
-        } else if (status === 500) {
-          message = 'Ошибка сервера. Попробуйте позже.';
-        }
-      } else if (error.request) {
-        message = 'Сервер не отвечает. Проверьте подключение к интернету.';
-      }
-
-      setNotification({ type: 'error', message });
-    } finally {
-      setLoading(false);
+      }, 1000);
+    } else {
+      // Неверные учетные данные
+      setNotification({ type: 'error', message: 'Неверное имя пользователя или пароль' });
     }
-  };
+
+  } catch (error) {
+    console.error('Ошибка входа:', error);
+    let message = 'Ошибка входа. Проверьте данные.';
+    
+    if (error.response) {
+      const { status, data } = error.response;
+      if (status === 422) {
+        message = 'Некорректный формат данных. Проверьте введённые данные.';
+        if (data.detail) {
+          message = data.detail.map((err) => err.msg).join(' ') || message;
+        }
+      } else if (status === 500) {
+        message = 'Ошибка сервера. Попробуйте позже.';
+      }
+    } else if (error.request) {
+      message = 'Сервер не отвечает. Проверьте подключение к интернету.';
+    }
+
+    setNotification({ type: 'error', message });
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (notification.message) {

@@ -6,7 +6,7 @@ import {
 import { Close, Delete, Search } from '@mui/icons-material';
 import DateFinder from '../../components/DateFinder';
 import axios from 'axios';
-import { API_URL } from '../../utils/utils';
+import { API_URL,capitalize } from '../../utils/utils';
 import { useOutletContext } from 'react-router-dom';
 
 const ScheduleAdminPage = () => {
@@ -249,7 +249,7 @@ const ScheduleAdminPage = () => {
                     >
                       <Box>
                         <Typography>
-                          {shift ? shift.employer_fio : 'Пусто'}
+                          {shift ? capitalize(shift.employer_fio) : 'Пусто'}
                         </Typography>
                         {shift && shift.employer_work_type.toLowerCase().includes('помощник') && (
                           <Typography variant="caption" sx={{ color: '#aaa', display: 'block' }}>
@@ -357,7 +357,7 @@ const ScheduleAdminPage = () => {
                   }}
                 >
                   <ListItemText 
-                    primary={employee.fio} 
+                    primary={capitalize(employee.fio)} 
                     primaryTypographyProps={{ color: 'white' }}
                   />
                 </ListItem>

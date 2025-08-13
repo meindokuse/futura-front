@@ -9,22 +9,12 @@ import {
   Box,
   Typography,
   IconButton,
-  CircularProgress,
-  FormControl,
-  Select,
-  MenuItem
+  CircularProgress
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
 import { API_URL } from '../utils/utils';
-
-const locationMapper = [
-  { value: null, label: 'Общая' },
-  { value: 1, label: 'Проспект мира' },
-  { value: 2, label: 'Страстной' },
-  { value: 3, label: 'Никольская' }
-];
 
 const initialFormData = {
   title: '',
@@ -39,6 +29,7 @@ export default function ManualDialog({
   onClose,
   onSave,
   manual,
+  locationId
 }) {
   const { handleNotification } = useOutletContext();
   const [formData, setFormData] = useState(initialFormData);
@@ -60,11 +51,14 @@ export default function ManualDialog({
           setFilePreview(`${API_URL}files/manuals/${manual.id}/get-photo?expansion=${manual.exp}`);
         }
       } else {
-        setFormData(initialFormData);
+        setFormData({
+          ...initialFormData,
+          location_id: locationId // Устанавливаем переданный locationId
+        });
         setFilePreview(null);
       }
     }
-  }, [open, manual]);
+  }, [open, manual, locationId]);
 
   const handleDialogClose = () => {
     setFormData(initialFormData);
@@ -153,7 +147,7 @@ export default function ManualDialog({
             title: formData.title,
             description: formData.description,
             exp: formData.exp,
-            location_id: formData.location_id
+            location_id: formData.location_id // Используем location_id из formData
           },
           { headers: { 'Content-Type': 'application/json' } }
         );
@@ -174,7 +168,7 @@ export default function ManualDialog({
             title: formData.title,
             description: formData.description,
             exp: formData.exp,
-            location_id: formData.location_id
+            location_id: formData.location_id // Используем location_id из formData
           },
           { headers: { 'Content-Type': 'application/json' } }
         );
@@ -263,44 +257,6 @@ export default function ManualDialog({
             helperText={errors.title}
             sx={textFieldStyles}
           />
-
-          <FormControl fullWidth error={!!errors.location_id} sx={textFieldStyles}>
-            <Select
-              value={formData.location_id === undefined ? null : formData.location_id}
-              name="location_id"
-              onChange={handleChange}
-              sx={{
-                color: '#ffffff',
-                '& .MuiSelect-icon': { color: '#ffffff' }
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    bgcolor: '#424242',
-                    color: '#ffffff',
-                    '& .MuiMenuItem-root': {
-                      '&:hover': { backgroundColor: 'rgba(200, 58, 10, 0.1)' },
-                      '&.Mui-selected': {
-                        backgroundColor: '#c83a0a',
-                        '&:hover': { backgroundColor: '#e04b1a' }
-                      }
-                    }
-                  }
-                }
-              }}
-            >
-              {locationMapper.map((loc) => (
-                <MenuItem key={loc.value || 'general'} value={loc.value}>
-                  {loc.label}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.location_id && (
-              <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
-                {errors.location_id}
-              </Typography>
-            )}
-          </FormControl>
 
           <TextField
             fullWidth

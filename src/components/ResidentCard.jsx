@@ -92,7 +92,7 @@ export default function ResidentCard({ client, onEdit, onDelete }) {
                 </Button>
                 <Button
                   startIcon={<Delete />}
-                  onClick={e => { e.stopPropagation(); onDelete(client.id); }}
+                  onClick={e => { e.stopPropagation(); onDelete(client); }}
                   sx={{ color: '#ffffff', '&:hover': { color: '#e04b1a' } }}
                 >
                   Удалить

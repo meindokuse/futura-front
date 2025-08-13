@@ -20,14 +20,15 @@ import { Snackbar, Alert } from '@mui/material';
 import { Menu as MenuIcon, Close as CloseIcon, LocationOn } from '@mui/icons-material';
 
 const StyledNav = styled('nav')(({ theme }) => ({
-  backgroundColor: '#2a2a2a',
+  backgroundColor: '#121212',
   padding: theme.spacing(2),
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  minHeight: '64px',
   position: 'relative',
   boxShadow: theme.shadows[2],
-  borderBottom: '4px solid #c83a0a'
+  borderBottom: '2px solid #c83a0a'
 }));
 
 
@@ -214,6 +215,16 @@ export default function AdminLayout({ mode }) {
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Outlet context={{ handleNotification, currentLocation, mode }} />
       </Box>
+
+      <Box component="footer" sx={{ 
+              backgroundColor: '#121212',
+              color: 'white',
+              py: 3,
+              textAlign: 'center',
+              borderTop: '2px solid #c83a0a'
+            }}>
+              <Typography>© {new Date().getFullYear()} HP Futura. Все права защищены.</Typography>
+            </Box>
 
       <Snackbar
         open={notification.open}

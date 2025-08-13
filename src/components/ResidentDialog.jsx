@@ -157,7 +157,7 @@ export default function ResidentDialog({
       } else {
         // Обновление существующего резидента
         const updateResponse = await axios.put(
-          `${API_URL}residents/update_resident?id=${resident.id}`,
+          `${API_URL}residents/admin/update_resident?id=${resident.id}`,
           {
             fio:null,
             discount_value: formData.discount_value,

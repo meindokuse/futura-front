@@ -6,6 +6,7 @@ import ManualCard from '../../components/ManualCard';
 import axios from 'axios';
 import Finder from '../../components/Finder';
 import ManualDialog from '../../components/ManualDialog';
+import DeleteConfirmationDialog from '../../components/DeleteConfirmationDialog';
 import { API_URL } from '../../utils/utils';
 import LocationToggle from '../../components/Switcher';
 
@@ -18,6 +19,8 @@ export default function Manuals() {
   const [currentManual, setCurrentManual] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isGeneralEvent, setIsGeneralEvent] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [manualToDelete, setManualToDelete] = useState(null);
   const fetchInProgress = useRef(false);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -53,11 +56,10 @@ export default function Manuals() {
       const isLastPage = response.data.length < pagination.limit;
       setPagination(prev => ({
         ...prev,
-        total: isLastPage
-          ? (pagination.page - 1) * pagination.limit + response.data.length
-          : pagination.page * pagination.limit + 1
+        total: isLastPage && pagination.page === 1 
+          ? response.data.length 
+          : (pagination.page) * pagination.limit + 1
       }));
-
     } catch (err) {
       setError(err.message);
       console.error('Ошибка загрузки:', err);
@@ -83,11 +85,13 @@ export default function Manuals() {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${API_URL}cards/admin/delete_card?id=${id}`);
-      handleNotification('Клиент удален!', 'success');
+      handleNotification('Методичка удалена!', 'success');
       fetchManuals(searchTerm);
     } catch (err) {
       console.error('Ошибка удаления:', err);
       handleNotification('Ошибка при удалении!', 'error');
+    } finally {
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -186,7 +190,10 @@ export default function Manuals() {
                 <ManualCard
                   manual={manual}
                   onEdit={() => handleOpenEditDialog(manual)}
-                  onDelete={handleDelete}
+                  onDelete={() => {
+                    setManualToDelete(manual);
+                    setDeleteDialogOpen(true);
+                  }}
                 />
               </Grid>
             ))}
@@ -196,7 +203,6 @@ export default function Manuals() {
 
       {!loading && pagination.total > pagination.limit && (
         <Box sx={{ 
-          position: 'sticky',
           bottom: 0,
           left: 0,
           right: 0,
@@ -250,6 +256,14 @@ export default function Manuals() {
           handleCloseDialog();
         }}
         locationId={isGeneralEvent ? null : locationMapper[currentLocation]}
+      />
+
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={() => handleDelete(manualToDelete?.id)}
+        title="Удаление методички"
+        content={`Вы уверены, что хотите удалить методичку "${manualToDelete?.title}"? Это действие нельзя отменить.`}
       />
     </Box>
   );

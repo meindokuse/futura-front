@@ -38,7 +38,7 @@ const EventCard = ({ event, onEdit, onDelete }) => {
               </Button>
               <Button
                 startIcon={<Delete />}
-                onClick={e => { e.stopPropagation(); onDelete(event.id); }}
+                onClick={e => { e.stopPropagation(); onDelete(event); }}
                 sx={{ color: '#ffffff', '&:hover': { color: '#e04b1a' }, fontSize: '1rem' }}
               >
                 Удалить

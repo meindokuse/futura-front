@@ -6,7 +6,9 @@ import ResidentCard from '../../components/ResidentCard';
 import axios from 'axios';
 import Finder from '../../components/Finder';
 import ResidentDialog from '../../components/ResidentDialog';
-import { API_URL } from '../../utils/utils';
+import { API_URL,capitalize } from '../../utils/utils';
+import DeleteConfirmationDialog from '../../components/DeleteConfirmationDialog';
+
 
 export default function Residents() {
   const { handleNotification, mode } = useOutletContext();
@@ -17,6 +19,8 @@ export default function Residents() {
   const [currentClient, setCurrentClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const fetchInProgress = useRef(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -46,9 +50,9 @@ export default function Residents() {
       const isLastPage = response.data.length < pagination.limit;
       setPagination(prev => ({
         ...prev,
-        total: isLastPage
-          ? (pagination.page - 1) * pagination.limit + response.data.length
-          : pagination.page * pagination.limit + 1
+        total: isLastPage && pagination.page === 1 
+          ? response.data.length 
+          : (pagination.page) * pagination.limit + 1
       }));
     } catch (err) {
       setError(err.message);
@@ -80,6 +84,8 @@ export default function Residents() {
     } catch (err) {
       console.error('Ошибка удаления:', err);
       handleNotification('Ошибка при удалении!', 'error');
+    } finally {
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -169,7 +175,10 @@ export default function Residents() {
                 <ResidentCard
                   client={client}
                   onEdit={() => handleOpenEditDialog(client)}
-                  onDelete={handleDelete}
+                  onDelete={() => {
+                  setClientToDelete(client);
+                  setDeleteDialogOpen(true);
+                }}
                 />
               </Grid>
             ))}
@@ -179,7 +188,6 @@ export default function Residents() {
 
       {!loading && pagination.total > pagination.limit && (
         <Box sx={{ 
-          position: 'sticky',
           bottom: 0,
           left: 0,
           right: 0,
@@ -232,6 +240,13 @@ export default function Residents() {
           fetchClients(searchTerm);
           handleCloseDialog();
         }}
+      />
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={() => handleDelete(clientToDelete?.id)}
+        title="Удаление клиента"
+        content={`Вы уверены, что хотите удалить постоянника ${capitalize(clientToDelete?.fio)}? Это действие нельзя отменить.`}
       />
     </Box>
   );

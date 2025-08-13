@@ -15,7 +15,8 @@ import { API_URL } from './utils/utils';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import ProfilePage from './pages/profile/Profile';
 import ScheduleAdminPage from './pages/admin/ScheduleAdmin';
-
+import ForgotPasswordPage from './pages/login/ForgotPasswordPage';
+import ResetPasswordPage  from './pages/login/ResetPasswordPage';
 
 function AppRouter() {
 
@@ -53,6 +54,8 @@ function AppRouter() {
         </Route>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/access-denied" element={<AccessDeniedPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Routes>
     </BrowserRouter>
   );

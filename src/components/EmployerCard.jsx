@@ -2,20 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import { Box, Typography, IconButton, useMediaQuery, CircularProgress } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import axios from 'axios';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { API_URL, capitalize } from '../utils/utils';
-import { useOutletContext,useNavigate } from 'react-router-dom';
 
 const photoCache = {};
 
-export default function EmployerCard({ employee, onEdit, onDelete, })  {
+export default function EmployerCard({ employee, onEdit, onDelete }) {
   const { mode } = useOutletContext();
   const [photoUrl, setPhotoUrl] = useState(null);
   const [loadingPhoto, setLoadingPhoto] = useState(true);
   const isMobile = useMediaQuery('(max-width:600px)');
   const abortControllerRef = useRef(null);
-   const navigate = useNavigate();
+  const navigate = useNavigate();
 
-  const handleClick = () => { 
+  const handleClick = () => {
     navigate(`/profile/${employee.id}`);
   };
 
@@ -82,36 +82,43 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
   };
 
   return (
-    <Box sx={{ 
+    <Box 
+    sx={{ 
       width: '100%',
-      height: '100%',
-      minHeight: isMobile ? '320px' : '380px',
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: isMobile ? 'row' : 'column',
       backgroundColor: 'rgba(30, 30, 30, 0.7)',
       border: '1px solid rgba(255, 255, 255, 0.12)',
       borderRadius: '12px',
       color: '#ffffff',
-      transition: 'all 0.3s ease',
       overflow: 'hidden',
+      mb: isMobile ? 2 : 0,
+      // Добавляем отступы по бокам только на мобилках
+      mx: isMobile ? 0 : 'auto',
+      // Убираем максимальную ширину на мобилках
+      maxWidth: isMobile ? '100%' : 300,
+      transition: 'all 0.3s ease',
       '&:hover': {
         transform: 'translateY(-4px)',
         boxShadow: '0 8px 24px rgba(200, 58, 10, 0.2)',
         borderColor: 'rgb(200, 58, 10)',
       }
-    }}>
-      {/* Photo Area (50%) */}
-      <Box sx={{
-        width: '100%',
-        height: '50%',
-        position: 'relative',
-        overflow: 'hidden',
-        backgroundColor: '#2a2a2a',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}
-      onClick={handleClick}
+    }}
+  >
+      {/* Photo Area */}
+      <Box 
+        sx={{
+          width: isMobile ? '120px' : '100%',
+          height: isMobile ? '120px' : '180px',
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: '#2a2a2a',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          cursor: 'pointer'
+        }}
+        onClick={handleClick}
       >
         {loadingPhoto ? (
           <CircularProgress size={32} color="inherit" />
@@ -124,10 +131,7 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: 'center',
-              position: 'absolute',
-              top: 0,
-              left: 0
+              objectPosition: 'center'
             }}
             onError={handleImageError}
           />
@@ -140,24 +144,24 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: 'center',
-              position: 'absolute',
-              top: 0,
-              left: 0
+              objectPosition: 'center'
             }}
           />
         )}
       </Box>
 
-      {/* Content Area (50%) */}
-      <Box sx={{ 
-        height: '50%',
-        display: 'flex',
-        flexDirection: 'column',
-        p: isMobile ? 1.5 : 2,
-        overflow: 'hidden'
-      }}>
-        <Box sx={{ flexGrow: 1 }}>
+      {/* Content Area */}
+      <Box 
+        sx={{ 
+          flex: 1,
+          p: isMobile ? 1.5 : 2,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          minHeight: isMobile ? '120px' : 'auto'
+        }}
+      >
+        <Box>
           <Typography 
             gutterBottom 
             sx={{ 
@@ -165,9 +169,11 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
               lineHeight: 1.2,
               fontSize: getFontSize(employee.fio),
               mb: 1,
-              whiteSpace: 'nowrap',
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical'
             }}
           >
             {capitalize(employee.fio)}
@@ -179,11 +185,11 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
               color: 'rgba(255, 255, 255, 0.7)',
               fontSize: isMobile ? '0.75rem' : '0.875rem',
               mb: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
               display: '-webkit-box',
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              WebkitBoxOrient: 'vertical'
             }}
           >
             {capitalize(employee.work_type)}
@@ -194,8 +200,7 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
           <Box sx={{ 
             display: 'flex',
             justifyContent: 'flex-end',
-            mt: 'auto',
-            pt: 1
+            mt: 'auto'
           }}>
             <IconButton 
               onClick={(e) => {
@@ -213,7 +218,7 @@ export default function EmployerCard({ employee, onEdit, onDelete, })  {
             <IconButton 
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(employee.id);
+                onDelete(employee);
               }}
               size="small"
               sx={{ 

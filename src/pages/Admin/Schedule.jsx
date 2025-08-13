@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { 
   Box, Typography, Button, CircularProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  IconButton, Grid
+  Grid
 } from '@mui/material';
-import { Search, Close, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import axios from 'axios';
-import { API_URL } from '../../utils/utils';
+import { API_URL, capitalize } from '../../utils/utils';
 import Finder from '../../components/Finder';
 import WorkTypeFinder from '../../components/WorkTypeFinder';
 
@@ -19,6 +19,12 @@ export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [workTypeFilter, setWorkTypeFilter] = useState('');
+  const [hoveredRow, setHoveredRow] = useState(null); // Состояние для наведенной строки
+  const [hoveredColumn, setHoveredColumn] = useState(null); // Состояние для наведенного столбца
+  const tableRef = useRef(null); // Ссылка на TableContainer
+  const isDragging = useRef(false); // Флаг для отслеживания зажатия
+  const startX = useRef(0); // Начальная позиция X
+  const scrollLeft = useRef(0); // Начальная позиция скролла
 
   const locationMapper = {
     'Проспект мира': 1,
@@ -86,6 +92,56 @@ export default function SchedulePage() {
     Object.values(groupedWorkdays).sort((a, b) => a.employer.localeCompare(b.employer)),
     [groupedWorkdays]
   );
+
+  // Обработчики для скроллинга мышью
+  const handleMouseDown = (e) => {
+    isDragging.current = true;
+    startX.current = e.pageX - (tableRef.current?.offsetLeft || 0);
+    scrollLeft.current = tableRef.current?.scrollLeft || 0;
+    tableRef.current.style.cursor = 'grabbing';
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    const x = e.pageX - (tableRef.current?.offsetLeft || 0);
+    const walk = (x - startX.current) * 2; // Ускорение скролла
+    tableRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+    tableRef.current.style.cursor = 'grab';
+  };
+
+  // Обработчики для скроллинга касанием
+  const handleTouchStart = (e) => {
+    isDragging.current = true;
+    startX.current = e.touches[0].pageX - (tableRef.current?.offsetLeft || 0);
+    scrollLeft.current = tableRef.current?.scrollLeft || 0;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging.current) return;
+    const x = e.touches[0].pageX - (tableRef.current?.offsetLeft || 0);
+    const walk = (x - startX.current) * 2;
+    tableRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+  };
+
+  // Обработчики для наведения
+  const handleCellMouseEnter = (rowIndex, columnIndex) => {
+    setHoveredRow(rowIndex);
+    setHoveredColumn(columnIndex);
+  };
+
+  const handleCellMouseLeave = () => {
+    setHoveredRow(null);
+    setHoveredColumn(null);
+  };
 
   const handleSearch = (term) => {
     setSearchTerm(term);
@@ -252,43 +308,67 @@ export default function SchedulePage() {
           <CircularProgress color="inherit" />
         </Box>
       ) : (
-        <TableContainer sx={{ 
-          maxHeight: 'calc(100vh - 300px)', 
-          overflow: 'auto',
-          border: '1px solid white',
-          borderRadius: 2,
-          backgroundColor: 'transparent'
-        }}>
+        <TableContainer 
+          ref={tableRef}
+          sx={{ 
+            maxHeight: 'calc(100vh - 300px)', 
+            overflow: 'auto',
+            border: '1px solid white',
+            borderRadius: 2,
+            backgroundColor: 'transparent',
+            cursor: 'grab'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
                 <TableCell sx={{ 
-                  minWidth: 200, 
+                  width: 200, 
+                  minWidth: 200,
                   backgroundColor: '#1e1e1e', 
                   color: 'white',
-                  borderColor: 'white'
+                  border: '1px solid white',
+                  position: 'sticky',
+                  left: 0,
+                  zIndex: 15
                 }}>
                   Сотрудник
                 </TableCell>
                 <TableCell sx={{ 
+                  width: 150,
                   minWidth: 150, 
                   backgroundColor: '#1e1e1e', 
                   color: 'white',
-                  borderColor: 'white'
+                  border: '1px solid white',
+                  borderRight: '3px solid white', // Разделяющая полоса
+                  position: 'sticky',
+                  left: 200,
+                  zIndex: 15
                 }}>
                   Должность
                 </TableCell>
-                {daysInMonth.map(({ day, date }) => (
+                {daysInMonth.map(({ day, date }, index) => (
                   <TableCell 
                     key={day} 
                     align="center"
+                    onMouseEnter={() => handleCellMouseEnter(null, index)}
+                    onMouseLeave={handleCellMouseLeave}
                     sx={{ 
                       minWidth: 50,
                       fontWeight: date.getDay() === 0 || date.getDay() === 6 ? 'bold' : 'normal',
                       color: date.getDay() === 0 ? '#ff4444' : 
                             date.getDay() === 6 ? '#c83a0a' : 'white',
-                      backgroundColor: '#1e1e1e',
-                      borderColor: 'white'
+                      backgroundColor: hoveredColumn === index ? 'rgba(200, 58, 10, 0.3)' : '#1e1e1e',
+                      border: '1px solid white',
+                      borderLeft: 'none', // Убираем левую границу для всех дней
+                      zIndex: 2
                     }}
                   >
                     {day}
@@ -297,32 +377,49 @@ export default function SchedulePage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {employees.map((employee, index) => (
+              {employees.map((employee, rowIndex) => (
                 <TableRow 
-                  key={`${employee.employer}-${index}`}
+                  key={`${employee.employer}-${rowIndex}`}
                   sx={{
-                    '&:nth-of-type(odd)': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    },
-                    '&:hover': {
-                      backgroundColor: 'rgba(200, 58, 10, 0.2)',
-                    }
+                    backgroundColor: 'transparent', // Прозрачный фон строки
                   }}
                 >
-                  <TableCell sx={{ color: 'white', borderColor: 'white' }}>
-                    {employee.employer}
+                  <TableCell sx={{ 
+                    color: 'white', 
+                    border: '1px solid white',
+                    position: 'sticky',
+                    left: 0,
+                    zIndex: 12,
+                    backgroundColor: rowIndex % 2 === 0 ? '#212121' : '#2a2a2a', // Непрозрачный базовый фон
+                    ...(hoveredRow === rowIndex && { backgroundColor: '#c8643c' }) // Непрозрачная подсветка
+                  }}>
+                    {capitalize(employee.employer)}
                   </TableCell>
-                  <TableCell sx={{ color: 'white', borderColor: 'white' }}>
-                    {employee.work_type}
+                  <TableCell sx={{ 
+                    color: 'white', 
+                    border: '1px solid white',
+                    borderRight: '3px solid white', // Разделяющая полоса
+                    position: 'sticky',
+                    left: 200,
+                    zIndex: 12,
+                    backgroundColor: rowIndex % 2 === 0 ? '#212121' : '#2a2a2a', // Непрозрачный базовый фон
+                    ...(hoveredRow === rowIndex && { backgroundColor: '#c8643c' }) // Непрозрачная подсветка
+                  }}>
+                    {capitalize(employee.work_type)}
                   </TableCell>
-                  {daysInMonth.map(({ day }) => (
+                  {daysInMonth.map(({ day }, colIndex) => (
                     <TableCell 
                       key={day} 
                       align="center"
+                      onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
+                      onMouseLeave={handleCellMouseLeave}
                       sx={{ 
                         color: 'white',
-                        borderColor: 'white',
-                        bgcolor: employee.days[day] ? 'rgba(200, 58, 10, 0.3)' : 'transparent'
+                        border: '1px solid white',
+                        borderLeft: 'none', // Убираем левую границу для всех дней
+                        bgcolor: employee.days[day] ? 'rgba(200, 58, 10, 0.3)' : 
+                          (hoveredRow === rowIndex || hoveredColumn === colIndex) ? 'rgba(200, 58, 10, 0.3)' : 
+                          rowIndex % 2 === 0 ? '#212121' : '#2a2a2a'
                       }}
                     >
                       {employee.days[day] || ''}

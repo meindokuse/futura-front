@@ -8,6 +8,7 @@ import EventDialog from '../../components/EventDialog';
 import Finder from '../../components/Finder';
 import DateFinder from '../../components/DateFinder';
 import LocationToggle from '../../components/Switcher';
+import DeleteConfirmationDialog from '../../components/DeleteConfirmationDialog';
 import { API_URL } from '../../utils/utils';
 
 export default function EventsPage() {
@@ -20,10 +21,12 @@ export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [isGeneralEvent, setIsGeneralEvent] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
   const fetchInProgress = useRef(false);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 2,
+    limit: 10,
     total: 0
   });
 
@@ -61,9 +64,9 @@ export default function EventsPage() {
       const isLastPage = response.data.length < pagination.limit;
       setPagination(prev => ({
         ...prev,
-        total: isLastPage
-          ? (pagination.page - 1) * pagination.limit + response.data.length
-          : pagination.page * pagination.limit + 1
+        total: isLastPage && pagination.page === 1 
+          ? response.data.length 
+          : (pagination.page) * pagination.limit + 1
       }));
     } catch (err) {
       setError(err.message);
@@ -136,6 +139,23 @@ export default function EventsPage() {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setCurrentEvent(null);
+  };
+
+  const handleDeleteClick = (event) => {
+    setEventToDelete({
+      id: event.id,
+      name: event.name
+    });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await handleDelete(eventToDelete.id);
+      setDeleteDialogOpen(false);
+    } catch (err) {
+      console.error('Ошибка удаления:', err);
+    }
   };
 
   if (error) {
@@ -212,7 +232,7 @@ export default function EventsPage() {
                 <EventCard
                   event={event}
                   onEdit={() => handleOpenEditDialog(event)}
-                  onDelete={handleDelete}
+                  onDelete={() => handleDeleteClick(event)}
                 />
               </Grid>
             ))}
@@ -222,7 +242,6 @@ export default function EventsPage() {
 
       {!loading && pagination.total > pagination.limit && (
         <Box sx={{ 
-          position: 'sticky',
           bottom: 0,
           left: 0,
           right: 0,
@@ -274,6 +293,15 @@ export default function EventsPage() {
         event={currentEvent}
         locationId={isGeneralEvent ? null : locationMapper[currentLocation]}
         isGeneralEvent={isGeneralEvent}
+      />
+
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Удаление события"
+        content={`Вы уверены, что хотите удалить событие ${eventToDelete?.name}?`}
+
       />
     </Box>
   );
