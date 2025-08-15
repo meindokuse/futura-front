@@ -6,11 +6,11 @@ import {
 import { Close, Delete, Search } from '@mui/icons-material';
 import DateFinder from '../../components/DateFinder';
 import axios from 'axios';
-import { API_URL,capitalize } from '../../utils/utils';
+import { API_URL, capitalize } from '../../utils/utils';
 import { useOutletContext } from 'react-router-dom';
 
 const ScheduleAdminPage = () => {
-  const { currentLocation } = useOutletContext();
+  const { currentLocation, handleNotification } = useOutletContext();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [scheduleData, setScheduleData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,6 +19,8 @@ const ScheduleAdminPage = () => {
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSubmitted, setSearchSubmitted] = useState(false);
+  const [isEmployeesLoading, setIsEmployeesLoading] = useState(false);
+  const [deletingShiftId, setDeletingShiftId] = useState(null);
 
   const locationMapper = {
     'Проспект мира': 1,
@@ -39,14 +41,16 @@ const ScheduleAdminPage = () => {
       setScheduleData(response.data || []);
     } catch (error) {
       console.error('Ошибка при загрузке расписания:', error);
+      handleNotification('Ошибка при загрузке расписания:', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  // Получаем сотрудников по типу работы и фио (если есть)
+  // Получаем сотрудников по типу работы и ФИО (если есть)
   const fetchEmployeesByWorkType = async (workType, fio = null) => {
     try {
+      setIsEmployeesLoading(true);
       const response = await axios.get(`${API_URL}employers/get_employer_by_work_type`, {
         params: {
           work_type: workType.toLowerCase(),
@@ -57,7 +61,10 @@ const ScheduleAdminPage = () => {
       return response.data || [];
     } catch (error) {
       console.error('Ошибка при загрузке сотрудников:', error);
+      handleNotification('Ошибка при загрузке сотрудников:', 'error');
       return [];
+    } finally {
+      setIsEmployeesLoading(false);
     }
   };
 
@@ -141,18 +148,25 @@ const ScheduleAdminPage = () => {
       });
       
       await fetchScheduleData();
+      handleNotification('Успешно!');
       setDrawerOpen(false);
     } catch (error) {
       console.error('Ошибка при сохранении расписания:', error);
+      handleNotification('Ошибка при сохранении:', 'error');
     }
   };
 
   const handleDeleteShift = async (shiftId) => {
     try {
+      setDeletingShiftId(shiftId);
       await axios.delete(`${API_URL}workdays/admin/delete_workday?id=${shiftId}`);
       await fetchScheduleData();
+      handleNotification('Успешно!');
     } catch (error) {
       console.error('Ошибка при удалении смены:', error);
+      handleNotification('Ошибка при удалении!', 'error');
+    } finally {
+      setDeletingShiftId(null);
     }
   };
 
@@ -188,7 +202,7 @@ const ScheduleAdminPage = () => {
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress color="inherit" />
+          <CircularProgress sx={{ color: '#c83a0a' }} />
         </Box>
       ) : (
         <Box sx={{ 
@@ -271,8 +285,13 @@ const ScheduleAdminPage = () => {
                               transform: 'scale(1.1)'
                             } 
                           }}
+                          disabled={deletingShiftId === shift.id}
                         >
-                          <Delete fontSize="small" />
+                          {deletingShiftId === shift.id ? (
+                            <CircularProgress size={20} sx={{ color: '#c83a0a' }} />
+                          ) : (
+                            <Delete fontSize="small" />
+                          )}
                         </IconButton>
                       )}
                     </Box>
@@ -339,7 +358,11 @@ const ScheduleAdminPage = () => {
               borderRadius: '3px',
             }
           }}>
-            {filteredEmployees.length > 0 ? (
+            {isEmployeesLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <CircularProgress size={30} sx={{ color: '#c83a0a' }} />
+              </Box>
+            ) : filteredEmployees.length > 0 ? (
               filteredEmployees.map(employee => (
                 <ListItem 
                   key={employee.id}
@@ -368,7 +391,7 @@ const ScheduleAdminPage = () => {
                 mt: 2,
                 color: 'white'
               }}>
-                {searchSubmitted ? 'Сотрудники не найдены' : 'Загрузка...'}
+                Сотрудники не найдены
               </Typography>
             )}
           </List>

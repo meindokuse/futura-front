@@ -9,9 +9,10 @@ import {
   IconButton,
   CircularProgress,
   Typography,
-  Box
+  Box,
+  InputAdornment
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { Close, Visibility, VisibilityOff } from '@mui/icons-material';
 import axios from 'axios';
 import { API_URL } from '../../utils/utils';
 
@@ -21,6 +22,9 @@ export default function PasswordDialog({ open, onClose, handleNotification }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validate = () => {
     if (!currentPassword) {
@@ -43,51 +47,49 @@ export default function PasswordDialog({ open, onClose, handleNotification }) {
   };
 
   const handleSubmit = async () => {
-  if (!validate()) return;
-  setLoading(true);
-  setError('');
+    if (!validate()) return;
+    setLoading(true);
+    setError('');
 
-  try {
-    const response = await axios.post(
-      `${API_URL}auth/change-password`,
-      {
-        current_password: currentPassword,
-        new_password: newPassword
-      },
-      {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+    try {
+      const response = await axios.post(
+        `${API_URL}auth/change-password`,
+        {
+          current_password: currentPassword,
+          new_password: newPassword
+        },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      }
-    );
+      );
 
-    // Проверяем успешный ответ от сервера
-    if (response.data && response.data.success) { // или другой критерий успеха
-      handleNotification('success', 'Пароль успешно обновлен');
-      onClose();
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } else {
-      // Если сервер вернул ответ, но без флага успеха
-      const errorMessage = response.data?.message || 'Не удалось обновить пароль';
+      if (response.data && response.data.success) {
+        handleNotification('success', 'Пароль успешно обновлен');
+        onClose();
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        const errorMessage = response.data?.message || 'Не удалось обновить пароль';
+        setError(errorMessage);
+        handleNotification('error', errorMessage);
+      }
+      
+    } catch (error) {
+      console.error('Ошибка при обновлении пароля:', error);
+      const errorMessage = error.response?.data?.detail === "Неверный текущий пароль"
+        ? "Неверный текущий пароль"
+        : error.response?.data?.message || 'Ошибка при обновлении пароля';
+      
       setError(errorMessage);
       handleNotification('error', errorMessage);
+    } finally {
+      setLoading(false);
     }
-    
-  } catch (error) {
-    console.error('Ошибка при обновлении пароля:', error);
-    const errorMessage = error.response?.data?.detail === "Неверный текущий пароль"
-      ? "Неверный текущий пароль"
-      : error.response?.data?.message || 'Ошибка при обновлении пароля';
-    
-    setError(errorMessage);
-    handleNotification('error', errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const textFieldStyles = {
     '& .MuiOutlinedInput-root': {
@@ -153,32 +155,71 @@ export default function PasswordDialog({ open, onClose, handleNotification }) {
         <TextField
           fullWidth
           label="Текущий пароль"
-          type="password"
+          type={showCurrentPassword ? "text" : "password"}
           value={currentPassword}
           onChange={(e) => { setCurrentPassword(e.target.value); setError(''); }}
           sx={textFieldStyles}
           margin="normal"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  edge="end"
+                  sx={{ color: '#ffffff' }}
+                >
+                  {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
         <TextField
           fullWidth
           label="Новый пароль"
-          type="password"
+          type={showNewPassword ? "text" : "password"}
           value={newPassword}
           onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
           error={!!error}
           helperText={error}
           sx={textFieldStyles}
           margin="normal"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  edge="end"
+                  sx={{ color: '#ffffff' }}
+                >
+                  {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
         <TextField
           fullWidth
           label="Подтвердите новый пароль"
-          type="password"
+          type={showConfirmPassword ? "text" : "password"}
           value={confirmPassword}
           onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
           error={!!error}
           sx={textFieldStyles}
           margin="normal"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  edge="end"
+                  sx={{ color: '#ffffff' }}
+                >
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            )
+          }}
         />
       </DialogContent>
       <DialogActions sx={{ 

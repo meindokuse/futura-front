@@ -1,156 +1,124 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, CircularProgress, IconButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, CircularProgress, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import { Close } from '@mui/icons-material';
-import ReactCrop from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import Cropper from 'react-easy-crop';
+import 'react-easy-crop/react-easy-crop.css';
 
 const TARGET_SIZE = 500;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MIN_CROP_SIZE = 100;
 
 const CropImageDialog = ({ open, onClose, image, onCropComplete, loading }) => {
-  const [crop, setCrop] = useState(null);
-  const [completedCrop, setCompletedCrop] = useState(null);
-  const [imageRef, setImageRef] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const containerRef = useRef(null);
-  const imgRef = useRef(null);
 
-  // Инициализация и центрирование
-  const initializeCrop = useCallback((img) => {
-    const container = containerRef.current;
-    if (!container) return;
+  // Устанавливаем размер контейнера при открытии диалога
+  useEffect(() => {
+    if (open && containerRef.current) {
+      const width = containerRef.current.clientWidth;
+      const height = isMobile ? window.innerHeight * 0.6 : Math.min(window.innerHeight * 0.6, 500);
+      setContainerSize({ width, height });
+    }
+  }, [open, isMobile]);
 
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-    setContainerSize({ width: containerWidth, height: containerHeight });
+  // Инициализация зума при загрузке изображения
+  const initializeZoom = useCallback(() => {
+    if (!containerRef.current || !image) return;
 
-    const scale = Math.min(
-      containerWidth / img.naturalWidth,
-      containerHeight / img.naturalHeight,
-      1
-    );
-
-    const displayedWidth = img.naturalWidth * scale;
-    const displayedHeight = img.naturalHeight * scale;
-
-    // Начальный размер области обрезки (меньший из размеров, но не больше TARGET_SIZE)
-    const cropSize = Math.min(
-      Math.min(displayedWidth, displayedHeight),
-      TARGET_SIZE * (Math.max(img.naturalWidth, img.naturalHeight) / TARGET_SIZE)
-    );
-
-    // Центрируем область обрезки
-    const initialCrop = {
-      unit: 'px',
-      width: cropSize,
-      height: cropSize,
-      x: (displayedWidth - cropSize) / 2,
-      y: (displayedHeight - cropSize) / 2
+    const img = new Image();
+    img.src = image;
+    img.onload = () => {
+      const { width: containerWidth, height: containerHeight } = containerSize;
+      const scale = Math.min(
+        containerWidth / img.naturalWidth,
+        containerHeight / img.naturalHeight,
+        1
+      );
+      setZoom(scale);
     };
+  }, [image, containerSize]);
 
-    setCrop(initialCrop);
-    setCompletedCrop(initialCrop);
+  useEffect(() => {
+    initializeZoom();
+  }, [initializeZoom]);
+
+  const onCropChange = useCallback((newCrop) => {
+    setCrop(newCrop);
   }, []);
 
-  const onLoad = useCallback((img) => {
-    setImageRef(img);
-    initializeCrop(img);
-  }, [initializeCrop]);
+  const onZoomChange = useCallback((newZoom) => {
+    setZoom(Math.max(1, Math.min(newZoom, 3))); // Ограничиваем зум от 1 до 3
+  }, []);
 
-  // Автомасштабирование при изменении области обрезки
+  const onCropCompleteCallback = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  // Автоматическое масштабирование при изменении области обрезки
   useEffect(() => {
-    if (!crop || !imgRef.current || !imageRef) return;
+    if (!croppedAreaPixels || !containerSize.width) return;
 
-    const handleCropChange = (newCrop) => {
-      const img = imgRef.current;
-      const scaleX = imageRef.naturalWidth / img.width;
-      const scaleY = imageRef.naturalHeight / img.height;
-
-      // Рассчитываем новые координаты, чтобы сохранить центр
-      const centerX = newCrop.x + newCrop.width / 2;
-      const centerY = newCrop.y + newCrop.height / 2;
-
-      // Автомасштабирование - уменьшаем область при увеличении размеров
-      const targetRatio = TARGET_SIZE / Math.min(imageRef.naturalWidth, imageRef.naturalHeight);
-      const sizeRatio = newCrop.width / (TARGET_SIZE / targetRatio);
-
-      if (sizeRatio > 1.1) {
-        const adjustedSize = newCrop.width / sizeRatio;
-        const adjustedCrop = {
-          ...newCrop,
-          width: Math.max(adjustedSize, MIN_CROP_SIZE),
-          height: Math.max(adjustedSize, MIN_CROP_SIZE),
-          x: centerX - adjustedSize / 2,
-          y: centerY - adjustedSize / 2
-        };
-        setCrop(adjustedCrop);
-        return;
-      }
-
-      // Проверяем границы
-      const maxX = img.width - newCrop.width;
-      const maxY = img.height - newCrop.height;
-
-      const clampedCrop = {
-        ...newCrop,
-        x: Math.max(0, Math.min(newCrop.x, maxX)),
-        y: Math.max(0, Math.min(newCrop.y, maxY))
-      };
-
-      if (clampedCrop.x !== newCrop.x || clampedCrop.y !== newCrop.y) {
-        setCrop(clampedCrop);
-      }
-    };
-
-    handleCropChange(crop);
-  }, [crop, imageRef]);
+    const cropSize = Math.min(croppedAreaPixels.width, croppedAreaPixels.height);
+    const targetCropSize = Math.min(containerSize.width, containerSize.height) * 0.5;
+    const newZoom = Math.max(1, targetCropSize / cropSize);
+    setZoom(Math.min(newZoom, 3)); // Ограничиваем максимальный зум
+  }, [croppedAreaPixels, containerSize]);
 
   const getCroppedImg = useCallback(async () => {
-    if (!completedCrop || !imageRef || !imgRef.current) return null;
+    if (!croppedAreaPixels) return null;
 
-    const canvas = document.createElement('canvas');
-    canvas.width = TARGET_SIZE;
-    canvas.height = TARGET_SIZE;
-    const ctx = canvas.getContext('2d');
+    try {
+      const imageElement = new Image();
+      imageElement.src = image;
+      await new Promise((resolve) => { imageElement.onload = resolve; });
 
-    const scaleX = imageRef.naturalWidth / imgRef.current.width;
-    const scaleY = imageRef.naturalHeight / imgRef.current.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = TARGET_SIZE;
+      canvas.height = TARGET_SIZE;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
 
-    ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(
+        imageElement,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        TARGET_SIZE,
+        TARGET_SIZE
+      );
 
-    ctx.drawImage(
-      imageRef,
-      completedCrop.x * scaleX,
-      completedCrop.y * scaleY,
-      completedCrop.width * scaleX,
-      completedCrop.height * scaleY,
-      0,
-      0,
-      TARGET_SIZE,
-      TARGET_SIZE
-    );
+      const compressImage = (quality = 0.9) => {
+        return new Promise((resolve) => {
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              resolve(null);
+              return;
+            }
 
-    const compressImage = (quality = 0.9) => {
-      return new Promise((resolve) => {
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            resolve(null);
-            return;
-          }
+            if (blob.size > MAX_FILE_SIZE && quality > 0.1) {
+              const newQuality = Math.max(0.1, quality * 0.7);
+              compressImage(newQuality).then(resolve);
+            } else {
+              resolve(new File([blob], 'cropped.png', { type: 'image/png' }));
+            }
+          }, 'image/png', quality);
+        });
+      };
 
-          if (blob.size > MAX_FILE_SIZE && quality > 0.1) {
-            const newQuality = Math.max(0.1, quality * 0.7);
-            compressImage(newQuality).then(resolve);
-          } else {
-            resolve(new File([blob], 'cropped.png', { type: 'image/png' }));
-          }
-        }, 'image/png', quality);
-      });
-    };
-
-    return await compressImage();
-  }, [completedCrop, imageRef]);
+      return await compressImage();
+    } catch (error) {
+      console.error('Ошибка обрезки:', error);
+      return null;
+    }
+  }, [croppedAreaPixels, image]);
 
   const handleSave = useCallback(async () => {
     const croppedImage = await getCroppedImg();
@@ -163,7 +131,8 @@ const CropImageDialog = ({ open, onClose, image, onCropComplete, loading }) => {
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{ sx: { backgroundColor: '#121212', color: '#ffffff', borderRadius: '8px' } }}
+      fullScreen={isMobile}
+      PaperProps={{ sx: { backgroundColor: '#121212', color: '#ffffff', borderRadius: isMobile ? 0 : '8px' } }}
     >
       <DialogTitle sx={{ p: 2, borderBottom: '1px solid #c83a0a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6" fontWeight="bold">Обрезка фото</Typography>
@@ -179,8 +148,9 @@ const CropImageDialog = ({ open, onClose, image, onCropComplete, loading }) => {
           flexDirection: 'column', 
           alignItems: 'center', 
           gap: 2,
-          height: '60vh',
-          overflow: 'hidden'
+          height: isMobile ? 'auto' : '60vh',
+          maxHeight: '80vh',
+          overflow: 'auto'
         }}
       >
         {loading && (
@@ -201,35 +171,37 @@ const CropImageDialog = ({ open, onClose, image, onCropComplete, loading }) => {
         )}
         
         <Box sx={{ 
+          position: 'relative',
           width: '100%', 
-          height: '100%', 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          position: 'relative'
+          height: containerSize.height || '60vh',
+          minHeight: isMobile ? '300px' : '400px'
         }}>
-          <ReactCrop
+          <Cropper
+            image={image}
             crop={crop}
-            onChange={setCrop}
-            onComplete={setCompletedCrop}
+            zoom={zoom}
             aspect={1}
-            minWidth={MIN_CROP_SIZE}
-            minHeight={MIN_CROP_SIZE}
-            keepSelection
-            style={{ maxWidth: '100%', maxHeight: '100%' }}
-          >
-            <img
-              ref={imgRef}
-              src={image}
-              alt="Crop preview"
-              style={{ 
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain'
-              }}
-              onLoad={(e) => onLoad(e.currentTarget)}
-            />
-          </ReactCrop>
+            minZoom={1}
+            maxZoom={3}
+            onCropChange={onCropChange}
+            onZoomChange={onZoomChange}
+            onCropComplete={onCropCompleteCallback}
+            showGrid={false}
+            restrictPosition={false}
+            cropSize={{ width: MIN_CROP_SIZE * 2, height: MIN_CROP_SIZE * 2 }}
+            style={{
+              containerStyle: { 
+                width: '100%', 
+                height: '100%', 
+                backgroundColor: '#121212' 
+              },
+              mediaStyle: { 
+                maxWidth: '100%', 
+                maxHeight: '100%', 
+                objectFit: 'contain' 
+              }
+            }}
+          />
         </Box>
       </DialogContent>
       <DialogActions sx={{ p: 2, borderTop: '1px solid #c83a0a' }}>
@@ -239,7 +211,7 @@ const CropImageDialog = ({ open, onClose, image, onCropComplete, loading }) => {
         <Button
           onClick={handleSave}
           variant="contained"
-          disabled={!completedCrop || loading}
+          disabled={!croppedAreaPixels || loading}
           sx={{ bgcolor: '#c83a0a', color: '#ffffff', '&:hover': { bgcolor: '#e04b1a' } }}
         >
           Сохранить

@@ -10,8 +10,6 @@ import Residents from './pages/admin/Residents';
 import Manuals from './pages/admin/Manuals';
 import LoginPage from './pages/login/LoginPage';
 import { initInterceptor } from './interceptors';
-import axios from 'axios';
-import { API_URL } from './utils/utils';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import ProfilePage from './pages/profile/Profile';
 import ScheduleAdminPage from './pages/admin/ScheduleAdmin';

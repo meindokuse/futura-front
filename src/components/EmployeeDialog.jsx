@@ -178,6 +178,7 @@ export default function EmployerDialog({
         : await handleCreate(formData);
       
       onSave(result);
+      handleNotification('Успешно!')
       handleDialogClose();
     } catch (error) {
       handleNotification(

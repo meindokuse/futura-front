@@ -36,11 +36,11 @@ const LoginForm = ({
               <UserRound size={20} />
             </div>
             <input
-              type="text" // Используем type="text", так как username может быть не email
+              type="email" // Используем type="text", так как username может быть не email
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              placeholder="Имя пользователя"
+              placeholder="Email пользователя"
               disabled={loading}
             />
           </div>

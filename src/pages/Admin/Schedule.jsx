@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { 
   Box, Typography, Button, CircularProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Grid
+  Grid, Card, CardContent, useMediaQuery
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import axios from 'axios';
@@ -13,18 +13,19 @@ import WorkTypeFinder from '../../components/WorkTypeFinder';
 
 export default function SchedulePage() {
   const { currentLocation } = useOutletContext();
+  const isMobile = useMediaQuery('(max-width:900px)');
   const [workdays, setWorkdays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [workTypeFilter, setWorkTypeFilter] = useState('');
-  const [hoveredRow, setHoveredRow] = useState(null); // Состояние для наведенной строки
-  const [hoveredColumn, setHoveredColumn] = useState(null); // Состояние для наведенного столбца
-  const tableRef = useRef(null); // Ссылка на TableContainer
-  const isDragging = useRef(false); // Флаг для отслеживания зажатия
-  const startX = useRef(0); // Начальная позиция X
-  const scrollLeft = useRef(0); // Начальная позиция скролла
+  const [hoveredRow, setHoveredRow] = useState(null);
+  const [hoveredColumn, setHoveredColumn] = useState(null);
+  const tableRef = useRef(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
 
   const locationMapper = {
     'Проспект мира': 1,
@@ -32,7 +33,6 @@ export default function SchedulePage() {
     'Никольская': 3
   };
 
-  // Получаем данные с сервера
   const fetchWorkdays = async () => {
     try {
       setLoading(true);
@@ -56,7 +56,6 @@ export default function SchedulePage() {
     fetchWorkdays();
   }, [currentDate, currentLocation, searchTerm, workTypeFilter]);
 
-  // Генерация дней месяца для заголовков таблицы
   const daysInMonth = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -68,7 +67,6 @@ export default function SchedulePage() {
     }));
   }, [currentDate]);
 
-  // Группировка смен по сотрудникам
   const groupedWorkdays = useMemo(() => {
     const groups = {};
     
@@ -87,72 +85,48 @@ export default function SchedulePage() {
     return groups;
   }, [workdays]);
 
-  // Уникальные сотрудники для строк таблицы
   const employees = useMemo(() => 
     Object.values(groupedWorkdays).sort((a, b) => a.employer.localeCompare(b.employer)),
     [groupedWorkdays]
   );
 
-  // Обработчики для скроллинга мышью
   const handleMouseDown = (e) => {
-    isDragging.current = true;
-    startX.current = e.pageX - (tableRef.current?.offsetLeft || 0);
-    scrollLeft.current = tableRef.current?.scrollLeft || 0;
-    tableRef.current.style.cursor = 'grabbing';
+    if (!isMobile) {
+      isDragging.current = true;
+      startX.current = e.pageX - (tableRef.current?.offsetLeft || 0);
+      scrollLeft.current = tableRef.current?.scrollLeft || 0;
+      if (tableRef.current) tableRef.current.style.cursor = 'grabbing';
+    }
   };
 
   const handleMouseMove = (e) => {
-    if (!isDragging.current) return;
-    e.preventDefault();
-    const x = e.pageX - (tableRef.current?.offsetLeft || 0);
-    const walk = (x - startX.current) * 2; // Ускорение скролла
-    tableRef.current.scrollLeft = scrollLeft.current - walk;
+    if (!isMobile && isDragging.current && tableRef.current) {
+      e.preventDefault();
+      const x = e.pageX - (tableRef.current.offsetLeft || 0);
+      const walk = (x - startX.current) * 2;
+      tableRef.current.scrollLeft = scrollLeft.current - walk;
+    }
   };
 
   const handleMouseUp = () => {
-    isDragging.current = false;
-    tableRef.current.style.cursor = 'grab';
+    if (!isMobile && tableRef.current) {
+      isDragging.current = false;
+      tableRef.current.style.cursor = 'grab';
+    }
   };
 
-  // Обработчики для скроллинга касанием
-  const handleTouchStart = (e) => {
-    isDragging.current = true;
-    startX.current = e.touches[0].pageX - (tableRef.current?.offsetLeft || 0);
-    scrollLeft.current = tableRef.current?.scrollLeft || 0;
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isDragging.current) return;
-    const x = e.touches[0].pageX - (tableRef.current?.offsetLeft || 0);
-    const walk = (x - startX.current) * 2;
-    tableRef.current.scrollLeft = scrollLeft.current - walk;
-  };
-
-  const handleTouchEnd = () => {
-    isDragging.current = false;
-  };
-
-  // Обработчики для наведения
   const handleCellMouseEnter = (rowIndex, columnIndex) => {
-    setHoveredRow(rowIndex);
-    setHoveredColumn(columnIndex);
+    if (!isMobile) {
+      setHoveredRow(rowIndex);
+      setHoveredColumn(columnIndex);
+    }
   };
 
   const handleCellMouseLeave = () => {
-    setHoveredRow(null);
-    setHoveredColumn(null);
-  };
-
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-  };
-
-  const handleWorkTypeSearch = (workType) => {
-    setWorkTypeFilter(workType);
-  };
-
-  const handleClearSearch = () => {
-    setSearchTerm('');
+    if (!isMobile) {
+      setHoveredRow(null);
+      setHoveredColumn(null);
+    }
   };
 
   const handlePrevMonth = () => {
@@ -205,7 +179,10 @@ export default function SchedulePage() {
       p: { xs: 2, md: 3 },
       backgroundColor: 'transparent',
       minHeight: '100vh',
-      color: 'white'
+      color: 'white',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center'
     }}>
       <Typography variant="h4" sx={{ 
         mb: 3, 
@@ -216,8 +193,7 @@ export default function SchedulePage() {
         Расписание - {currentLocation}
       </Typography>
 
-      {/* Фильтры и навигация */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
+      <Grid container spacing={2} sx={{ mb: 4, width: '100%', maxWidth: '1200px' }}>
         <Grid item xs={12} md={6}>
           <Box sx={{ 
             display: 'flex', 
@@ -228,15 +204,12 @@ export default function SchedulePage() {
               findBy="ФИО"
               value={searchTerm}
               onChange={setSearchTerm}
-              onSubmit={handleSearch}
-              onClear={handleClearSearch}
               sx={{ flex: 1 }}
             />
             <WorkTypeFinder
               value={workTypeFilter}
               onChange={setWorkTypeFilter}
-              onSubmit={handleWorkTypeSearch}
-              sx={{ flex: 1, minWidth: '200px' }}
+              sx={{ flex: 1 }}
             />
           </Box>
         </Grid>
@@ -298,7 +271,9 @@ export default function SchedulePage() {
       <Typography variant="h5" sx={{ 
         mb: 2, 
         textAlign: 'center',
-        color: 'white'
+        color: 'white',
+        width: '100%',
+        maxWidth: '1200px'
       }}>
         {monthName}
       </Typography>
@@ -307,129 +282,192 @@ export default function SchedulePage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
           <CircularProgress color="inherit" />
         </Box>
+      ) : isMobile ? (
+        <Box sx={{
+          width: '100%',
+          maxWidth: '900px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 3,
+          px: 2
+        }}>
+          {employees.map((employee) => (
+            <Card key={employee.employer} sx={{
+              width: '100%',
+              maxWidth: '800px',
+              backgroundColor: 'rgba(30, 30, 30, 0.8)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: 2
+            }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
+                  {capitalize(employee.employer)}
+                </Typography>
+                <Typography color="#c83a0a" sx={{ mb: 2 }}>
+                  {capitalize(employee.work_type)}
+                </Typography>
+                
+                <Grid container spacing={1}>
+                  {daysInMonth.map(({ day, date }) => (
+                    employee.days[day] && (
+                      <Grid item xs={4} sm={3} key={day}>
+                        <Box sx={{ 
+                          p: 1,
+                          border: '1px solid rgba(200, 58, 10, 0.3)',
+                          borderRadius: 1,
+                          textAlign: 'center',
+                          bgcolor: 'rgba(30, 30, 30, 0.5)',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center'
+                        }}>
+                          <Typography variant="body2" sx={{ 
+                            color: date.getDay() === 0 ? '#ff4444' : 
+                                  date.getDay() === 6 ? '#c83a0a' : 'white'
+                          }}>
+                            {day} {date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', '')}
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold" sx={{ color: 'white' }}>
+                            {employee.days[day]}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )
+                  ))}
+                </Grid>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
       ) : (
-        <TableContainer 
-          ref={tableRef}
-          sx={{ 
-            maxHeight: 'calc(100vh - 300px)', 
-            overflow: 'auto',
-            border: '1px solid white',
-            borderRadius: 2,
-            backgroundColor: 'transparent',
-            cursor: 'grab'
-          }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <Table stickyHeader size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ 
-                  width: 200, 
-                  minWidth: 200,
-                  backgroundColor: '#1e1e1e', 
-                  color: 'white',
-                  border: '1px solid white',
-                  position: 'sticky',
-                  left: 0,
-                  zIndex: 15
-                }}>
-                  Сотрудник
-                </TableCell>
-                <TableCell sx={{ 
-                  width: 150,
-                  minWidth: 150, 
-                  backgroundColor: '#1e1e1e', 
-                  color: 'white',
-                  border: '1px solid white',
-                  borderRight: '3px solid white', // Разделяющая полоса
-                  position: 'sticky',
-                  left: 200,
-                  zIndex: 15
-                }}>
-                  Должность
-                </TableCell>
-                {daysInMonth.map(({ day, date }, index) => (
-                  <TableCell 
-                    key={day} 
-                    align="center"
-                    onMouseEnter={() => handleCellMouseEnter(null, index)}
-                    onMouseLeave={handleCellMouseLeave}
-                    sx={{ 
-                      minWidth: 50,
-                      fontWeight: date.getDay() === 0 || date.getDay() === 6 ? 'bold' : 'normal',
-                      color: date.getDay() === 0 ? '#ff4444' : 
-                            date.getDay() === 6 ? '#c83a0a' : 'white',
-                      backgroundColor: hoveredColumn === index ? 'rgba(200, 58, 10, 0.3)' : '#1e1e1e',
-                      border: '1px solid white',
-                      borderLeft: 'none', // Убираем левую границу для всех дней
-                      zIndex: 2
-                    }}
-                  >
-                    {day}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {employees.map((employee, rowIndex) => (
-                <TableRow 
-                  key={`${employee.employer}-${rowIndex}`}
-                  sx={{
-                    backgroundColor: 'transparent', // Прозрачный фон строки
-                  }}
-                >
+        <Box sx={{ 
+          width: '100%',
+          maxWidth: '1200px',
+          overflow: 'hidden'
+        }}>
+          <TableContainer 
+            ref={tableRef}
+            sx={{ 
+              maxHeight: 'calc(100vh - 300px)', 
+              overflow: 'auto',
+              border: '1px solid white',
+              borderRadius: 2,
+              backgroundColor: 'transparent',
+              cursor: 'grab'
+            }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <Table stickyHeader size="small">
+              <TableHead>
+                <TableRow>
                   <TableCell sx={{ 
-                    color: 'white', 
+                    width: 200, 
+                    minWidth: 200,
+                    backgroundColor: '#1e1e1e', 
+                    color: 'white',
                     border: '1px solid white',
                     position: 'sticky',
                     left: 0,
-                    zIndex: 12,
-                    backgroundColor: rowIndex % 2 === 0 ? '#212121' : '#2a2a2a', // Непрозрачный базовый фон
-                    ...(hoveredRow === rowIndex && { backgroundColor: '#c8643c' }) // Непрозрачная подсветка
+                    zIndex: 15
                   }}>
-                    {capitalize(employee.employer)}
+                    Сотрудник
                   </TableCell>
                   <TableCell sx={{ 
-                    color: 'white', 
+                    width: 150,
+                    minWidth: 150, 
+                    backgroundColor: '#1e1e1e', 
+                    color: 'white',
                     border: '1px solid white',
-                    borderRight: '3px solid white', // Разделяющая полоса
+                    borderRight: '3px solid white',
                     position: 'sticky',
                     left: 200,
-                    zIndex: 12,
-                    backgroundColor: rowIndex % 2 === 0 ? '#212121' : '#2a2a2a', // Непрозрачный базовый фон
-                    ...(hoveredRow === rowIndex && { backgroundColor: '#c8643c' }) // Непрозрачная подсветка
+                    zIndex: 15
                   }}>
-                    {capitalize(employee.work_type)}
+                    Должность
                   </TableCell>
-                  {daysInMonth.map(({ day }, colIndex) => (
+                  {daysInMonth.map(({ day, date }, index) => (
                     <TableCell 
                       key={day} 
                       align="center"
-                      onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
+                      onMouseEnter={() => handleCellMouseEnter(null, index)}
                       onMouseLeave={handleCellMouseLeave}
                       sx={{ 
-                        color: 'white',
+                        minWidth: 50,
+                        fontWeight: date.getDay() === 0 || date.getDay() === 6 ? 'bold' : 'normal',
+                        color: date.getDay() === 0 ? '#ff4444' : 
+                              date.getDay() === 6 ? '#c83a0a' : 'white',
+                        backgroundColor: hoveredColumn === index ? 'rgba(200, 58, 10, 0.3)' : '#1e1e1e',
                         border: '1px solid white',
-                        borderLeft: 'none', // Убираем левую границу для всех дней
-                        bgcolor: employee.days[day] ? 'rgba(200, 58, 10, 0.3)' : 
-                          (hoveredRow === rowIndex || hoveredColumn === colIndex) ? 'rgba(200, 58, 10, 0.3)' : 
-                          rowIndex % 2 === 0 ? '#212121' : '#2a2a2a'
+                        borderLeft: 'none',
+                        zIndex: 2
                       }}
                     >
-                      {employee.days[day] || ''}
+                      {day}
                     </TableCell>
                   ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {employees.map((employee, rowIndex) => (
+                  <TableRow 
+                    key={`${employee.employer}-${rowIndex}`}
+                    sx={{
+                      backgroundColor: 'transparent',
+                    }}
+                  >
+                    <TableCell sx={{ 
+                      color: 'white', 
+                      border: '1px solid white',
+                      position: 'sticky',
+                      left: 0,
+                      zIndex: 12,
+                      backgroundColor: rowIndex % 2 === 0 ? '#212121' : '#2a2a2a',
+                      ...(hoveredRow === rowIndex && { backgroundColor: '#c8643c' })
+                    }}>
+                      {capitalize(employee.employer)}
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: 'white', 
+                      border: '1px solid white',
+                      borderRight: '3px solid white',
+                      position: 'sticky',
+                      left: 200,
+                      zIndex: 12,
+                      backgroundColor: rowIndex % 2 === 0 ? '#212121' : '#2a2a2a',
+                      ...(hoveredRow === rowIndex && { backgroundColor: '#c8643c' })
+                    }}>
+                      {capitalize(employee.work_type)}
+                    </TableCell>
+                    {daysInMonth.map(({ day }, colIndex) => (
+                      <TableCell 
+                        key={day} 
+                        align="center"
+                        onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
+                        onMouseLeave={handleCellMouseLeave}
+                        sx={{ 
+                          color: 'white',
+                          border: '1px solid white',
+                          borderLeft: 'none',
+                          bgcolor: employee.days[day] ? 'rgba(200, 58, 10, 0.3)' : 
+                            (hoveredRow === rowIndex || hoveredColumn === colIndex) ? 'rgba(200, 58, 10, 0.3)' : 
+                            rowIndex % 2 === 0 ? '#212121' : '#2a2a2a'
+                        }}
+                      >
+                        {employee.days[day] || ''}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       )}
     </Box>
   );

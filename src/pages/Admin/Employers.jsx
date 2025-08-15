@@ -112,14 +112,12 @@ export default function Employers() {
               findBy={'ФИО'}             
               value={searchTerm}
               onChange={setSearchTerm}
-              onSubmit={() => fetchEmployees()}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <WorkTypeFinder
               value={workTypeFilter}
               onChange={setWorkTypeFilter}
-              onSubmit={() => fetchEmployees()}
             />
           </Grid>
         </Grid>
