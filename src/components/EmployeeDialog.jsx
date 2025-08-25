@@ -30,7 +30,7 @@ import { API_URL, capitalize, compressImage } from '../utils/utils';
 import CropImageDialog from './CropImageDialog';
 
 // Константы
-const workTypeOptions = ['Бармен', 'Кальянный мастер', 'Хостес', 'Администратор','Менеджер','Помощник Бармена','Помощник кальянного мастера'];
+const workTypeOptions = ['Бармен', 'Кальянный мастер', 'Хостес','Менеджер','Помощник Бармена','Помощник кальянного мастера'];
 
 const locationMapper = [
   { value: 1, label: 'Проспект мира' },
@@ -40,7 +40,6 @@ const locationMapper = [
 
 const initialFormData = (locationId) => ({
   email: '',
-  password: '',
   is_admin: false,
   date_of_birth: dayjs().subtract(18, 'year'),
   fio: '',
@@ -84,10 +83,6 @@ export default function EmployerDialog({
           is_admin: employee.is_admin || false,
           work_type: employee.work_type || '',
           location_id: employee.location_id || locationId,
-          date_of_birth: employee.date_of_birth ? dayjs(employee.date_of_birth) : dayjs().subtract(18, 'year'),
-          contacts: employee.contacts || [],
-          description: employee.description || '',
-          photo: null
         });
       } else {
         setFormData(initialFormData(locationId));
@@ -133,7 +128,6 @@ export default function EmployerDialog({
         `${API_URL}auth/admin/register`,
         {
           email: data.email,
-          hashed_password: data.password,
           is_admin: data.is_admin,
           date_of_birth: data.date_of_birth.format('YYYY-MM-DD'),
           fio: data.fio,
@@ -159,7 +153,6 @@ export default function EmployerDialog({
           is_admin: data.is_admin,
           work_type: data.work_type,
           location_id: data.location_id,
-          description: data.description || null
         },
         { headers: { 'Content-Type': 'application/json' } }
       );
@@ -193,7 +186,6 @@ export default function EmployerDialog({
     
     if (!employee) {
       if (!formData.email) newErrors.email = 'Обязательное поле';
-      if (!formData.password) newErrors.password = 'Обязательное поле';
     }
     
     if (!formData.work_type) {
@@ -219,18 +211,6 @@ export default function EmployerDialog({
             helperText={errors.email}
             sx={textFieldStyles}
             autoComplete="off"
-          />
-          <TextField
-            fullWidth
-            label="Пароль"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            error={!!errors.password}
-            helperText={errors.password}
-            sx={textFieldStyles}
-            autoComplete="new-password"
           />
           <TextField
             fullWidth

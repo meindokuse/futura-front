@@ -246,7 +246,10 @@ export default function ResidentDialog({
                   '&:hover fieldset': { borderColor: '#c83a0a' },
                   '&.Mui-focused fieldset': { borderColor: '#c83a0a' }
                 },
-                '& .MuiInputLabel-root': { color: '#ffffff' },
+                '& .MuiInputLabel-root': { 
+                  color: '#ffffff',
+                  '&.Mui-focused': { color: '#c83a0a' } 
+                },
                 '& .MuiInputBase-input': { color: '#ffffff' }
               }}
             />
@@ -268,7 +271,10 @@ export default function ResidentDialog({
                 '&:hover fieldset': { borderColor: '#c83a0a' },
                 '&.Mui-focused fieldset': { borderColor: '#c83a0a' }
               },
-              '& .MuiInputLabel-root': { color: '#ffffff' },
+              '& .MuiInputLabel-root': { 
+                  color: '#ffffff',
+                  '&.Mui-focused': { color: '#c83a0a' } 
+                },
               '& .MuiInputBase-input': { color: '#ffffff' }
             }}
           />
@@ -287,7 +293,10 @@ export default function ResidentDialog({
                 '&:hover fieldset': { borderColor: '#c83a0a' },
                 '&.Mui-focused fieldset': { borderColor: '#c83a0a' }
               },
-              '& .MuiInputLabel-root': { color: '#ffffff' },
+              '& .MuiInputLabel-root': { 
+                  color: '#ffffff',
+                  '&.Mui-focused': { color: '#c83a0a' } 
+                },
               '& .MuiInputBase-input': { color: '#ffffff' }
             }}
           />

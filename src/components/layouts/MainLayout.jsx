@@ -252,10 +252,10 @@ export default function MainLayout() {
   };
 
   const navItems = [
-    { to: "/employers", label: "Работники" },
+    { to: "/employers", label: "Персонал" },
     { to: "/schedule", label: "Расписание" },
     { to: "/events", label: "События" },
-    { to: "/residents", label: "Постоянники" },
+    { to: "/residents", label: "Постоянные гости" },
     { to: "/manuals", label: "Методички" },
   ];
 

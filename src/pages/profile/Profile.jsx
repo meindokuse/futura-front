@@ -28,6 +28,8 @@ import ProfileDialog from './ProfileDialog';
 import PhotoActionDialog from './PhotoActionDialog';
 import PhotoUploadDialog from './PhotoChange';
 import { API_URL, capitalize } from '../../utils/utils';
+import { Star } from '@mui/icons-material';
+
 
 axios.defaults.withCredentials = true;
 
@@ -372,8 +374,7 @@ export default function ProfilePage({ mode = 'your' }) {
                 fontWeight: 'bold',
                 mb: 1
               }}>
-                {capitalize(profile.fio)}
-              </Typography>
+              {capitalize(profile.fio)}{profile.is_admin && " (Админ)"}              </Typography>
               <Typography sx={{ 
                 color: '#ffffff',
                 fontSize: '1.2rem',

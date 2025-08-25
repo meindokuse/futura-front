@@ -145,7 +145,7 @@ const BirthdayCard = ({ id, firstName, lastName, position, date, fetchPhoto, pho
           src={photo}
           alt={`${capitalize(firstName)} ${capitalize(lastName)}`}
           className={styles.avatar}
-          onError={() => setPhoto('/default-avatar.jpg')}
+          onError={() => setPhoto('/default-employer.jpg')}
         />
         <span className={styles.dateBadge}>{date}</span>
       </div>

@@ -8,8 +8,7 @@ import axios from 'axios';
 import Finder from '../../components/Finder';
 import WorkTypeFinder from '../../components/WorkTypeFinder';
 import DeleteConfirmationDialog from '../../components/DeleteConfirmationDialog'
-import { API_URL,capitalize } from '../../utils/utils';
-
+import { API_URL, capitalize } from '../../utils/utils';
 
 export default function Employers() {
   const { handleNotification, currentLocation, mode } = useOutletContext();
@@ -149,7 +148,8 @@ export default function Employers() {
         <>
           <Grid container spacing={isMobile ? 0 : 2} sx={{
             px: isMobile ? 1 : 0,
-            width: '100%'
+            width: '100%',
+            justifyContent: 'center'
           }}>
             {employees.map(employee => (
               <Grid item 
@@ -160,7 +160,9 @@ export default function Employers() {
                 sx={{
                   mb: isMobile ? 2 : 0,
                   display: 'flex',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  width: isMobile ? '100%' : 'auto',
+                  maxWidth: isMobile ? '400px' : 'none'
                 }}
               >
                 <EmployerCard
@@ -182,50 +184,50 @@ export default function Employers() {
           </Grid>
 
           {!loading && pagination.total > pagination.limit && (
-        <Box sx={{ 
-          bottom: 0,
-          left: 0,
-          right: 0,
-          py: 2,
-          zIndex: 1,
-          display: 'flex',
-          justifyContent: 'center',
-          mt: 2,
-          borderTop: '1px solid rgba(255, 255, 255, 0.12)'
-        }}>
-          <Pagination
-            count={Math.ceil(pagination.total / pagination.limit)}
-            page={pagination.page}
-            onChange={handlePageChange}
-            sx={{
-              '& .MuiPaginationItem-root': {
-                color: 'white',
-                fontSize: '1rem',
-              },
-              '& .MuiPaginationItem-page': {
-                backgroundColor: 'transparent',
-                '&:hover': {
-                  backgroundColor: 'rgba(200, 58, 10, 0.4)',
-                },
-              },
-              '& .MuiPaginationItem-page.Mui-selected': {
-                backgroundColor: '#c83a0a',
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: '#e04b1a',
-                },
-              },
-              '& .MuiPaginationItem-ellipsis': {
-                color: 'white !important',
-              },
-              '& .MuiSvgIcon-root': {
-                color: 'white !important',
-                fontSize: '1.5rem',
-              },
-            }}
-          />
-        </Box>
-      )}
+            <Box sx={{ 
+              bottom: 0,
+              left: 0,
+              right: 0,
+              py: 2,
+              zIndex: 1,
+              display: 'flex',
+              justifyContent: 'center',
+              mt: 2,
+              borderTop: '1px solid rgba(255, 255, 255, 0.12)'
+            }}>
+              <Pagination
+                count={Math.ceil(pagination.total / pagination.limit)}
+                page={pagination.page}
+                onChange={handlePageChange}
+                sx={{
+                  '& .MuiPaginationItem-root': {
+                    color: 'white',
+                    fontSize: '1rem',
+                  },
+                  '& .MuiPaginationItem-page': {
+                    backgroundColor: 'transparent',
+                    '&:hover': {
+                      backgroundColor: 'rgba(200, 58, 10, 0.4)',
+                    },
+                  },
+                  '& .MuiPaginationItem-page.Mui-selected': {
+                    backgroundColor: '#c83a0a',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: '#e04b1a',
+                    },
+                  },
+                  '& .MuiPaginationItem-ellipsis': {
+                    color: 'white !important',
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'white !important',
+                    fontSize: '1.5rem',
+                  },
+                }}
+              />
+            </Box>
+          )}
         </>
       )}
 

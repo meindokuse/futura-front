@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { 
   Box, Typography, Button, CircularProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Grid, Card, CardContent, useMediaQuery
+  Grid, Card, CardContent, useMediaQuery, Pagination
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import axios from 'axios';
@@ -26,6 +26,15 @@ export default function SchedulePage() {
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollLeft = useRef(0);
+  const abortControllerRef = useRef(null);
+  const fetchTimeoutRef = useRef(null);
+
+  // Пагинация для мобильной версии
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0
+  });
 
   const locationMapper = {
     'Проспект мира': 1,
@@ -34,27 +43,72 @@ export default function SchedulePage() {
   };
 
   const fetchWorkdays = async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
+      const params = {
+        date_now: currentDate.toISOString().split('T')[0],
+        location_id: locationMapper[currentLocation],
+        employer_fio: searchTerm,
+        employer_work_type: workTypeFilter
+      };
+
+      // Добавляем параметры пагинации только для мобильной версии
+      if (isMobile) {
+        params.page = pagination.page;
+        params.limit = pagination.limit;
+      }
+
       const response = await axios.get(`${API_URL}workdays/get_workday_filter`, {
-        params: {
-          date_now: currentDate.toISOString().split('T')[0],
-          location_id: locationMapper[currentLocation],
-          employer_fio: searchTerm,
-          employer_work_type: workTypeFilter
-        }
+        params,
+        signal: abortControllerRef.current.signal
       });
+      
       setWorkdays(response.data);
+      setError(null);
+
+      // Обновляем общее количество только для мобильной версии
+      if (isMobile) {
+        const isLastPage = response.data.length < pagination.limit;
+        setPagination(prev => ({
+          ...prev,
+          total: isLastPage && pagination.page === 1 
+            ? response.data.length 
+            : (pagination.page) * pagination.limit + 1
+        }));
+      }
     } catch (err) {
-      setError(err.message);
+      if (!axios.isCancel(err)) {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchWorkdays();
-  }, [currentDate, currentLocation, searchTerm, workTypeFilter]);
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchWorkdays();
+    }, 300);
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [currentDate, currentLocation, workTypeFilter, searchTerm, pagination.page]);
 
   const daysInMonth = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -149,6 +203,10 @@ export default function SchedulePage() {
     setCurrentDate(new Date());
   };
 
+  const handlePageChange = (event, newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
   const monthName = currentDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
 
   if (error) {
@@ -204,6 +262,7 @@ export default function SchedulePage() {
               findBy="ФИО"
               value={searchTerm}
               onChange={setSearchTerm}
+              onSubmit={setSearchTerm}
               sx={{ flex: 1 }}
             />
             <WorkTypeFinder
@@ -283,65 +342,102 @@ export default function SchedulePage() {
           <CircularProgress color="inherit" />
         </Box>
       ) : isMobile ? (
-        <Box sx={{
-          width: '100%',
-          maxWidth: '900px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 3,
-          px: 2
-        }}>
-          {employees.map((employee) => (
-            <Card key={employee.employer} sx={{
-              width: '100%',
-              maxWidth: '800px',
-              backgroundColor: 'rgba(30, 30, 30, 0.8)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: 2
-            }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
-                  {capitalize(employee.employer)}
-                </Typography>
-                <Typography color="#c83a0a" sx={{ mb: 2 }}>
-                  {capitalize(employee.work_type)}
-                </Typography>
-                
-                <Grid container spacing={1}>
-                  {daysInMonth.map(({ day, date }) => (
-                    employee.days[day] && (
-                      <Grid item xs={4} sm={3} key={day}>
-                        <Box sx={{ 
-                          p: 1,
-                          border: '1px solid rgba(200, 58, 10, 0.3)',
-                          borderRadius: 1,
-                          textAlign: 'center',
-                          bgcolor: 'rgba(30, 30, 30, 0.5)',
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center'
-                        }}>
-                          <Typography variant="body2" sx={{ 
-                            color: date.getDay() === 0 ? '#ff4444' : 
-                                  date.getDay() === 6 ? '#c83a0a' : 'white'
+        <>
+          <Box sx={{
+            width: '100%',
+            maxWidth: '900px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 3,
+            px: 2
+          }}>
+            {employees.map((employee) => (
+              <Card key={employee.employer} sx={{
+                width: '100%',
+                maxWidth: '800px',
+                backgroundColor: 'rgba(30, 30, 30, 0.8)',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: 2
+              }}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 1, fontWeight: 'bold' }}>
+                    {capitalize(employee.employer)}
+                  </Typography>
+                  <Typography color="#c83a0a" sx={{ mb: 2 }}>
+                    {capitalize(employee.work_type)}
+                  </Typography>
+                  
+                  <Grid container spacing={1}>
+                    {daysInMonth.map(({ day, date }) => (
+                      employee.days[day] && (
+                        <Grid item xs={4} sm={3} key={day}>
+                          <Box sx={{ 
+                            p: 1,
+                            border: '1px solid rgba(200, 58, 10, 0.3)',
+                            borderRadius: 1,
+                            textAlign: 'center',
+                            bgcolor: 'rgba(30, 30, 30, 0.5)',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center'
                           }}>
-                            {day} {date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', '')}
-                          </Typography>
-                          <Typography variant="body1" fontWeight="bold" sx={{ color: 'white' }}>
-                            {employee.days[day]}
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    )
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
+                            <Typography variant="body2" sx={{ 
+                              color: date.getDay() === 0 ? '#ff4444' : 
+                                    date.getDay() === 6 ? '#c83a0a' : 'white'
+                            }}>
+                              {day} {date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', '')}
+                            </Typography>
+                            <Typography variant="body1" fontWeight="bold" sx={{ color: 'white' }}>
+                              {employee.days[day]}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )
+                    ))}
+                  </Grid>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+
+          {pagination.total > pagination.limit && (
+            <Box sx={{ 
+              py: 2,
+              display: 'flex',
+              justifyContent: 'center',
+              width: '100%',
+              mt: 2
+            }}>
+              <Pagination
+                count={Math.ceil(pagination.total / pagination.limit)}
+                page={pagination.page}
+                onChange={handlePageChange}
+                sx={{
+                  '& .MuiPaginationItem-root': {
+                    color: 'white',
+                  },
+                  '& .MuiPaginationItem-page': {
+                    '&:hover': {
+                      backgroundColor: 'rgba(200, 58, 10, 0.4)',
+                    },
+                  },
+                  '& .MuiPaginationItem-page.Mui-selected': {
+                    backgroundColor: '#c83a0a',
+                    '&:hover': {
+                      backgroundColor: '#e04b1a',
+                    },
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'white',
+                  },
+                }}
+              />
+            </Box>
+          )}
+        </>
       ) : (
         <Box sx={{ 
           width: '100%',

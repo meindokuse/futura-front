@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Typography, IconButton, useMediaQuery, CircularProgress } from '@mui/material';
-import { Edit, Delete } from '@mui/icons-material';
+import { Edit, Delete, Star } from '@mui/icons-material';
 import axios from 'axios';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { API_URL, capitalize } from '../utils/utils';
@@ -83,33 +83,33 @@ export default function EmployerCard({ employee, onEdit, onDelete }) {
 
   return (
     <Box 
-    sx={{ 
-      width: '100%',
-      display: 'flex',
-      flexDirection: isMobile ? 'row' : 'column',
-      backgroundColor: 'rgba(30, 30, 30, 0.7)',
-      border: '1px solid rgba(255, 255, 255, 0.12)',
-      borderRadius: '12px',
-      color: '#ffffff',
-      overflow: 'hidden',
-      mb: isMobile ? 2 : 0,
-      // Добавляем отступы по бокам только на мобилках
-      mx: isMobile ? 0 : 'auto',
-      // Убираем максимальную ширину на мобилках
-      maxWidth: isMobile ? '100%' : 300,
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: '0 8px 24px rgba(200, 58, 10, 0.2)',
-        borderColor: 'rgb(200, 58, 10)',
-      }
-    }}
-  >
+      sx={{ 
+        width: '100%',
+        display: 'flex',
+        flexDirection: isMobile ? 'row' : 'column',
+        backgroundColor: 'rgba(30, 30, 30, 0.7)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        borderRadius: '12px',
+        color: '#ffffff',
+        overflow: 'hidden',
+        mb: isMobile ? 2 : 0,
+        mx: 'auto',
+        maxWidth: isMobile ? '400px' : 300,
+        height: isMobile ? '120px' : 'auto',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: '0 8px 24px rgba(200, 58, 10, 0.2)',
+          borderColor: 'rgb(200, 58, 10)',
+        }
+      }}
+    >
       {/* Photo Area */}
       <Box 
         sx={{
           width: isMobile ? '120px' : '100%',
           height: isMobile ? '120px' : '180px',
+          minWidth: isMobile ? '120px' : 'auto',
           position: 'relative',
           overflow: 'hidden',
           backgroundColor: '#2a2a2a',
@@ -154,11 +154,12 @@ export default function EmployerCard({ employee, onEdit, onDelete }) {
       <Box 
         sx={{ 
           flex: 1,
-          p: isMobile ? 1.5 : 2,
+          p: isMobile ? 1 : 2,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          minHeight: isMobile ? '120px' : 'auto'
+          minHeight: isMobile ? '120px' : 'auto',
+          width: isMobile ? 'calc(100% - 120px)' : '100%'
         }}
       >
         <Box>
@@ -173,10 +174,24 @@ export default function EmployerCard({ employee, onEdit, onDelete }) {
               textOverflow: 'ellipsis',
               display: '-webkit-box',
               WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical'
+              WebkitBoxOrient: 'vertical',
+              position: 'relative',
+              pr: employee.is_admin ? 2.5 : 0
             }}
           >
             {capitalize(employee.fio)}
+            {employee.is_admin && (
+              <Star 
+                fontSize="small" 
+                sx={{ 
+                  position: 'absolute',
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'rgb(200, 58, 10)'
+                }} 
+              />
+            )}
           </Typography>
           
           <Typography 

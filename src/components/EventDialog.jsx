@@ -7,17 +7,17 @@ import {
   Button,
   TextField,
   Box,
-  FormControlLabel,
-  Checkbox,
   IconButton,
   useMediaQuery,
   FormControl,
   Select,
   MenuItem,
-  Typography
+  Typography,
+  CircularProgress
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
-import { API_URL,capitalize,compressImage } from '../utils/utils';
+import axios from 'axios';
+import { API_URL } from '../utils/utils';
 
 const locationOptions = [
   { value: 1, label: 'Проспект мира' },
@@ -26,9 +26,17 @@ const locationOptions = [
   { value: 0, label: 'Общее событие' }
 ];
 
-const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
+// Функции для работы с временем
+const toLocalDateTimeString = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+};
+
+const EventDialog = ({ open, onClose, onSave, event, locationId, handleNotification }) => {
   const fullScreen = useMediaQuery('(max-width:600px)');
-  const [isGeneralEvent, setIsGeneralEvent] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     date_start: '',
@@ -40,20 +48,19 @@ const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
     if (event) {
       setFormData({
         name: event.name || '',
-        date_start: event.date_start ? new Date(event.date_start).toISOString().slice(0, 19) : '',
+        date_start: toLocalDateTimeString(event.date_start),
         description: event.description || '',
         location_id: locationId || 0
       });
-      setIsGeneralEvent(event.location_id === null);
     } else {
       setFormData({
         name: '',
         date_start: '',
         description: '',
-        location_id: locationId 
+        location_id: locationId || 0
       });
     }
-  }, [event, locationId, isGeneralEvent]);
+  }, [event, locationId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,32 +70,43 @@ const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
     }));
   };
 
-  const handleGeneralEventChange = (e) => {
-    const checked = e.target.checked;
-    setIsGeneralEvent(checked);
-    setFormData(prev => ({
-      ...prev,
-      location_id: checked ? null : (locationId || null)
-    }));
+  const handleNullLocation = (data) => {
+    if (data === 0 || data === '0') {
+      return null;
+    }
+    return data;
   };
 
-  const handleNullLocation = (data) => {
-    if (data === 0) {
-      return null
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+      
+      const data = {
+        name: formData.name,
+        date_start: formData.date_start,
+        description: formData.description,
+        location_id: handleNullLocation(formData.location_id)
+      };
+
+      let response;
+      if (event) {
+        // Update event
+        response = await axios.put(`${API_URL}events/admin/update_event?id=${event.id}`, data);
+      } else {
+        // Create event
+        response = await axios.post(`${API_URL}events/admin/create_event`, data);
+      }
+
+      handleNotification('Успешно сохранено!', 'success');
+      onSave(); // Вызываем callback для обновления списка
+      onClose(); // Закрываем диалог
+      
+    } catch (err) {
+      console.error('Ошибка сохранения:', err);
+      handleNotification('Ошибка при сохранении!', 'error');
+    } finally {
+      setLoading(false);
     }
-    return data
-  }
-
-
-  const handleSubmit = () => {
-    const data = {
-      name: formData.name,
-      date_start: new Date(formData.date_start).toISOString().slice(0,19),
-      description: formData.description,
-      location_id: handleNullLocation(formData.location_id)
-    };
-    console.log(data)
-    onSave(data);
   };
 
   return (
@@ -215,8 +233,8 @@ const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
               >
                 {locationOptions.map((option) => (
                   <MenuItem 
-                    key={option.value === null ? 'null' : option.value} 
-                    value={option.value === null ? 'null' : option.value}
+                    key={option.value} 
+                    value={option.value}
                   >
                     {option.label}
                   </MenuItem>
@@ -233,6 +251,7 @@ const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             onClick={onClose}
+            disabled={loading}
             sx={{
               color: '#ffffff',
               '&:hover': { color: '#c83a0a' },
@@ -244,6 +263,7 @@ const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
           <Button
             onClick={handleSubmit}
             variant="contained"
+            disabled={loading || !formData.name || !formData.date_start || !formData.description}
             sx={{
               bgcolor: '#c83a0a',
               '&:hover': { bgcolor: '#e04b1a' },
@@ -253,11 +273,18 @@ const EventDialog = ({ open, onClose, onSave, event, locationId }) => {
               },
               color: '#ffffff',
               minWidth: '120px',
-              borderRadius: '6px'
+              borderRadius: '6px',
+              position: 'relative'
             }}
-            disabled={!formData.name || !formData.date_start || !formData.description}
           >
-            Сохранить
+            {loading ? (
+              <>
+                <CircularProgress size={24} sx={{ color: 'white', position: 'absolute' }} />
+                <span style={{ opacity: 0 }}>Сохранить</span>
+              </>
+            ) : (
+              'Сохранить'
+            )}
           </Button>
         </Box>
       </DialogActions>

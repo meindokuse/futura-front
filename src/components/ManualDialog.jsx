@@ -103,13 +103,14 @@ export default function ManualDialog({
     }
   };
 
-  const uploadFile = async (manualId, file, extension) => {
+  const uploadFile = async (manualId, file, extension,is_update) => {
     try {
       const formData = new FormData();
       formData.append('photo', file);
+      const path =is_update ? 'update-file' : 'upload-photo'  
       
       const response = await axios.post(
-        `${API_URL}files/manuals/${manualId}/upload-photo?expansion=${extension}`,
+        `${API_URL}files/manuals/${manualId}/${path}?expansion=${extension}`,
         formData,
         {
           headers: {
@@ -124,6 +125,7 @@ export default function ManualDialog({
       throw error;
     }
   };
+
 
   const validate = () => {
     const newErrors = {};
@@ -163,8 +165,9 @@ export default function ManualDialog({
         }
       } else {
         const updateResponse = await axios.put(
-          `${API_URL}manuals/admin/update_manual?id=${manual.id}`,
+          `${API_URL}cards/admin/update_manual`,
           {
+            id:manual.id,
             title: formData.title,
             description: formData.description,
             exp: formData.exp,
@@ -177,7 +180,7 @@ export default function ManualDialog({
 
         if (formData.file) {
           try {
-            await uploadFile(manual.id, formData.file, formData.exp);
+            await uploadFile(manual.id, formData.file, formData.exp,true);
           } catch {
             handleNotification('Данные обновлены, но файл не загружен', 'warning');
           }

@@ -6,9 +6,8 @@ import ResidentCard from '../../components/ResidentCard';
 import axios from 'axios';
 import Finder from '../../components/Finder';
 import ResidentDialog from '../../components/ResidentDialog';
-import { API_URL,capitalize } from '../../utils/utils';
+import { API_URL, capitalize } from '../../utils/utils';
 import DeleteConfirmationDialog from '../../components/DeleteConfirmationDialog';
-
 
 export default function Residents() {
   const { handleNotification, mode } = useOutletContext();
@@ -18,9 +17,12 @@ export default function Residents() {
   const [openDialog, setOpenDialog] = useState(false);
   const [currentClient, setCurrentClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const fetchInProgress = useRef(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState(null);
+  
+  const abortControllerRef = useRef(null);
+  const fetchTimeoutRef = useRef(null);
+  
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -28,9 +30,13 @@ export default function Residents() {
   });
 
   const fetchClients = async (fioFilter = '') => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     try {
-      if (fetchInProgress.current) return;
-      fetchInProgress.current = true;
       setLoading(true);
 
       const params = {
@@ -44,9 +50,15 @@ export default function Residents() {
 
       const response = await axios.get(
         `${API_URL}residents/get_residents_by_filters`,
-        { params }
+        { 
+          params,
+          signal: abortControllerRef.current.signal
+        }
       );
+      
       setClients(response.data || []);
+      setError(null);
+      
       const isLastPage = response.data.length < pagination.limit;
       setPagination(prev => ({
         ...prev,
@@ -55,21 +67,36 @@ export default function Residents() {
           : (pagination.page) * pagination.limit + 1
       }));
     } catch (err) {
-      setError(err.message);
-      console.error('Ошибка загрузки:', err);
+      if (!axios.isCancel(err)) {
+        setError(err.message);
+        console.error('Ошибка загрузки:', err);
+      }
     } finally {
-      fetchInProgress.current = false;
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchClients();
-  }, [pagination.page]);
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchClients(searchTerm);
+    }, 300);
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [pagination.page, searchTerm]);
 
   const handleSearch = (term) => {
     setSearchTerm(term);
-    fetchClients(term);
   };
 
   const handlePageChange = (event, newPage) => {
@@ -176,9 +203,9 @@ export default function Residents() {
                   client={client}
                   onEdit={() => handleOpenEditDialog(client)}
                   onDelete={() => {
-                  setClientToDelete(client);
-                  setDeleteDialogOpen(true);
-                }}
+                    setClientToDelete(client);
+                    setDeleteDialogOpen(true);
+                  }}
                 />
               </Grid>
             ))}

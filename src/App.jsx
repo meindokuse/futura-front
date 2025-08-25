@@ -8,6 +8,7 @@ import Schedule from './pages/admin/Schedule';
 import Events from './pages/admin/Events';
 import Residents from './pages/admin/Residents';
 import Manuals from './pages/admin/Manuals';
+import LogsPage from './pages/admin/Logs';
 import LoginPage from './pages/login/LoginPage';
 import { initInterceptor } from './interceptors';
 import AccessDeniedPage from './pages/AccessDeniedPage';
@@ -15,6 +16,7 @@ import ProfilePage from './pages/profile/Profile';
 import ScheduleAdminPage from './pages/admin/ScheduleAdmin';
 import ForgotPasswordPage from './pages/login/ForgotPasswordPage';
 import ResetPasswordPage  from './pages/login/ResetPasswordPage';
+
 
 function AppRouter() {
 
@@ -48,6 +50,8 @@ function AppRouter() {
           <Route path="events" element={<Events />} />
           <Route path="residents" element={<Residents />} />
           <Route path="manuals" element={<Manuals />} />
+          <Route path="logs" element={<LogsPage />} />
+
           <Route index element={<Navigate to="employers" />} />
         </Route>
         <Route path="/login" element={<LoginPage />} />

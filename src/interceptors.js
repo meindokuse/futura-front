@@ -4,69 +4,50 @@ import { API_URL } from './utils/utils';
 axios.defaults.withCredentials = true;
 
 export const initInterceptor = () => {
-  let isRefreshing = false;
-
   axios.interceptors.response.use(
     (response) => response,
     async (error) => {
       const originalRequest = error.config;
 
-      // Пропускаем /auth/refresh и /auth/logout
-      if (
-        originalRequest.url === API_URL + 'auth/refresh' ||
-        originalRequest.url === API_URL + 'auth/logout'
-      ) {
+      // Пропускаем исключённые пути
+      const excludedPaths = [
+        `${API_URL}auth/token`,
+        `${API_URL}auth/logout`,
+        `${API_URL}auth/request-password-reset`,
+        `${API_URL}auth/verify-reset-token`,
+        `${API_URL}auth/reset-password`
+      ];
+
+      if (excludedPaths.includes(originalRequest.url)) {
+        console.log(`Skipping interceptor for ${originalRequest.url}`);
         return Promise.reject(error);
       }
 
+      // Обработка 403 (Access Denied)
       if (error.response?.status === 403) {
-        window.location.href = '/access-denied?from=' + 
-          encodeURIComponent(window.location.pathname);
+        console.log('403 Forbidden, redirecting to /access-denied');
+        window.location.href = `/access-denied?from=${encodeURIComponent(window.location.pathname)}`;
         return Promise.reject(error);
       }
 
-
-      // Обрабатываем 401
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        console.log('Caught 401 for URL:', originalRequest.url);
-
-        if (isRefreshing) {
-          return new Promise((resolve) => {
-            const interval = setInterval(() => {
-              if (!isRefreshing) {
-                clearInterval(interval);
-                resolve(axios(originalRequest));
-              }
-            }, 100);
-          });
-        }
-
-        originalRequest._retry = true;
-        isRefreshing = true;
-
+      // Обработка 401 (Unauthorized)
+      if (error.response?.status === 401) {
+        console.log('Caught 401 for URL:', originalRequest.url, 'Detail:', error.response?.data?.detail);
         try {
-          console.log('Attempting to refresh token');
-          await axios.post(`${API_URL}auth/refresh`, {});
-          isRefreshing = false;
-          console.log('Token refresh successful, retrying original request');
-          return axios(originalRequest);
-        } catch (refreshError) {
-          isRefreshing = false;
-          console.error('Refresh token failed:', {
-            status: refreshError.response?.status,
-            data: refreshError.response?.data,
-            message: refreshError.message,
-          });
-          try {
-            await axios.post(`${API_URL}auth/logout`, {});
-          } catch (logoutError) {
-            console.log('Logout failed:', logoutError);
-          }
-          window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname);
-          return Promise.reject(refreshError);
+          await axios.post(`${API_URL}auth/logout`, {}, { withCredentials: true, timeout: 5000 });
+          console.log('Logout successful');
+        } catch (logoutError) {
+          console.error('Logout failed:', logoutError);
         }
+        window.location.href = `/login?from=${encodeURIComponent(window.location.pathname)}`;
+        return Promise.reject(error);
       }
 
+      console.error('Request failed with error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        url: originalRequest.url,
+      });
       return Promise.reject(error);
     }
   );

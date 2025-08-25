@@ -166,7 +166,7 @@ export default function HomePage() {
       <div ref={restaurantsRef} className={`${styles.restaurantsSection} ${restaurantsInView ? styles.visible : ''}`}>
         <section className={styles.section}>
           <h2 ref={restaurantsTitleRef} className={`${styles.sectionTitle} ${restaurantsTitleInView ? styles.visible : ''}`}>
-            Точки
+            Наши проекты
           </h2>
           
           <div className={styles.restaurantsGrid}>

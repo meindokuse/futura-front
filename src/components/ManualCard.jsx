@@ -159,7 +159,7 @@ const handleDownload = async (e) => {
             <IconButton 
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(manual.id);
+                onDelete(manual.id,manual.exp);
               }}
               size="small"
               sx={{ 

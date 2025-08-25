@@ -16,6 +16,7 @@ const ScheduleAdminPage = () => {
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentForm, setCurrentForm] = useState(null);
+  const [currentShift, setCurrentShift] = useState(null); // Добавляем состояние для текущей смены
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSubmitted, setSearchSubmitted] = useState(false);
@@ -55,7 +56,6 @@ const ScheduleAdminPage = () => {
         params: {
           work_type: workType.toLowerCase(),
           fio: fio || undefined,
-          location_id: locationMapper[currentLocation]
         }
       });
       return response.data || [];
@@ -114,13 +114,23 @@ const ScheduleAdminPage = () => {
   }, [scheduleData]);
 
   const handleFormClick = async (workType, shiftNumber) => {
+    const shift = groupedByWorkType[workType]?.[shiftNumber - 1];
+    
     setCurrentForm({ workType, shiftNumber });
+    setCurrentShift(shift); // Сохраняем текущую смену
     setSearchTerm('');
     setSearchSubmitted(false);
     setDrawerOpen(true);
     
     const employees = await fetchEmployeesByWorkType(workType);
-    setFilteredEmployees(employees.filter(emp => !assignedIds.has(emp.id)));
+    
+    // Если редактируем существующую смену, показываем всех сотрудников
+    // Если добавляем новую - исключаем уже назначенных
+    const filtered = shift 
+      ? employees 
+      : employees.filter(emp => !assignedIds.has(emp.id));
+    
+    setFilteredEmployees(filtered);
   };
 
   const handleSearchSubmit = async (e) => {
@@ -133,23 +143,38 @@ const ScheduleAdminPage = () => {
       currentForm.workType, 
       searchTerm.trim() || undefined
     );
-    setFilteredEmployees(employees.filter(emp => !assignedIds.has(emp.id)));
+    
+    const filtered = currentShift 
+      ? employees 
+      : employees.filter(emp => !assignedIds.has(emp.id));
+    
+    setFilteredEmployees(filtered);
   };
 
   const handleEmployeeSelect = async (employee) => {
     if (!currentForm) return;
     
     try {
-      await axios.post(`${API_URL}workdays/admin/add_workday`, {
-        work_date: selectedDate,
-        employer_id: employee.id,
-        location_id: locationMapper[currentLocation],
-        number_work: currentForm.shiftNumber
-      });
+      if (currentShift) {
+        // UPDATE запрос для существующей смены
+        await axios.put(`${API_URL}workdays/admin/${currentShift.id}/update_workday`, {
+          id: currentShift.id,
+          employer_id: employee.id
+        });
+      } else {
+        // POST запрос для новой смены
+        await axios.post(`${API_URL}workdays/admin/add_workday`, {
+          work_date: selectedDate,
+          employer_id: employee.id,
+          location_id: locationMapper[currentLocation],
+          number_work: currentForm.shiftNumber
+        });
+      }
       
       await fetchScheduleData();
       handleNotification('Успешно!');
       setDrawerOpen(false);
+      setCurrentShift(null); // Сбрасываем состояние текущей смены
     } catch (error) {
       console.error('Ошибка при сохранении расписания:', error);
       handleNotification('Ошибка при сохранении:', 'error');
@@ -306,7 +331,10 @@ const ScheduleAdminPage = () => {
       <Drawer 
         anchor="right" 
         open={drawerOpen} 
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false);
+          setCurrentShift(null); // Сбрасываем состояние текущей смены при закрытии
+        }}
         PaperProps={{
           sx: {
             backgroundColor: 'black',
@@ -318,8 +346,13 @@ const ScheduleAdminPage = () => {
       >
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Выберите {currentForm?.workType?.toLowerCase()}</Typography>
-            <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'white' }}>
+            <Typography variant="h6">
+              {currentShift ? 'Изменить' : 'Выберите'} {currentForm?.workType?.toLowerCase()}
+            </Typography>
+            <IconButton onClick={() => {
+              setDrawerOpen(false);
+              setCurrentShift(null);
+            }} sx={{ color: 'white' }}>
               <Close />
             </IconButton>
           </Box>
@@ -372,7 +405,7 @@ const ScheduleAdminPage = () => {
                     borderRadius: 1,
                     mb: 1,
                     cursor: 'pointer',
-                    backgroundColor: 'transparent',
+                    backgroundColor: currentShift?.employer_id === employee.id ? 'rgba(200, 58, 10, 0.3)' : 'transparent',
                     '&:hover': { 
                       borderColor: '#c83a0a',
                       backgroundColor: 'rgba(200, 58, 10, 0.2)'

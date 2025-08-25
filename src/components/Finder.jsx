@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 
-const Finder = ({ findBy ,value, onChange, onSubmit }) => {
+const Finder = ({ findBy, value, onChange, onSubmit }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
+  const timeoutRef = React.useRef(null);
+
+  useEffect(() => {
+    setLocalValue(value); // Синхронизация с внешним значением
+  }, [value]);
+
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      onChange(localValue);
+      onSubmit(localValue);
+    }, 500);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [localValue, onChange, onSubmit]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
-      onSubmit(value);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      onChange(localValue);
+      onSubmit(localValue);
     }
   };
 
   const handleClear = () => {
-    onChange(''); // Очищаем значение
-    onSubmit('')
+    setLocalValue('');
+    onChange('');
+    onSubmit('');
   };
 
   return (
@@ -23,13 +51,13 @@ const Finder = ({ findBy ,value, onChange, onSubmit }) => {
           className="input"
           placeholder={'Поиск по ' + findBy}
           autoComplete="off"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
         />
-        {value && (
+        {localValue && (
           <span className="icon" onClick={handleClear}>
             <svg
               className="w-6 h-6 text-gray-800 dark:text-white"

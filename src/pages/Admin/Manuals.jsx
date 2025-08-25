@@ -21,7 +21,10 @@ export default function Manuals() {
   const [isGeneralEvent, setIsGeneralEvent] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [manualToDelete, setManualToDelete] = useState(null);
-  const fetchInProgress = useRef(false);
+  
+  const abortControllerRef = useRef(null);
+  const fetchTimeoutRef = useRef(null);
+  
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -35,8 +38,13 @@ export default function Manuals() {
   };
 
   const fetchManuals = async (titleFilter = '') => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     try {
-      if (fetchInProgress.current) return;
       setLoading(true);
       const locationId = isGeneralEvent ? null : locationMapper[currentLocation] || null;
       const params = {
@@ -48,11 +56,18 @@ export default function Manuals() {
       if (titleFilter && titleFilter.trim() !== '') {
         params.title = titleFilter.trim();
       }
+      
       const response = await axios.get(
         `${API_URL}cards/get_list_cards`,
-        { params }
+        { 
+          params,
+          signal: abortControllerRef.current.signal
+        }
       );
-      setManuals(response.data || [])
+      
+      setManuals(response.data || []);
+      setError(null);
+      
       const isLastPage = response.data.length < pagination.limit;
       setPagination(prev => ({
         ...prev,
@@ -61,30 +76,46 @@ export default function Manuals() {
           : (pagination.page) * pagination.limit + 1
       }));
     } catch (err) {
-      setError(err.message);
-      console.error('Ошибка загрузки:', err);
+      if (!axios.isCancel(err)) {
+        setError(err.message);
+        console.error('Ошибка загрузки:', err);
+      }
     } finally {
-      fetchInProgress.current = false;
-      setLoading(false)
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchManuals();
-  }, [pagination.page, currentLocation, isGeneralEvent]);
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchManuals(searchTerm);
+    }, 300);
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [pagination.page, currentLocation, isGeneralEvent, searchTerm]);
 
   const handleSearch = (term) => {
     setSearchTerm(term);
-    fetchManuals(term);
   };
 
   const handlePageChange = (event, newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id,expansion) => {
     try {
       await axios.delete(`${API_URL}cards/admin/delete_card?id=${id}`);
+      await axios.delete(`${API_URL}files/manuals/${id}/delete-photo?expansion=${expansion}`)
       handleNotification('Методичка удалена!', 'success');
       fetchManuals(searchTerm);
     } catch (err) {
@@ -261,7 +292,7 @@ export default function Manuals() {
       <DeleteConfirmationDialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        onConfirm={() => handleDelete(manualToDelete?.id)}
+        onConfirm={() => handleDelete(manualToDelete?.id,manualToDelete?.exp)}
         title="Удаление методички"
         content={`Вы уверены, что хотите удалить методичку "${manualToDelete?.title}"? Это действие нельзя отменить.`}
       />

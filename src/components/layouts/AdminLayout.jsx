@@ -113,11 +113,13 @@ export default function AdminLayout({ mode }) {
   };
 
   const navItems = [
-    { to: "/admin/employers", label: "Сотрудники" },
+    { to: "/admin/employers", label: "Персонал" },
     { to: "/admin/schedule", label: "Расписание" },
     { to: "/admin/events", label: "События" },
-    { to: "/admin/residents", label: "Постоянники" },
-    { to: "/admin/manuals", label: "Методички" }
+    { to: "/admin/residents", label: "Постоянные гости" },
+    { to: "/admin/manuals", label: "Методички" },
+    { to: "/admin/logs", label: "Журнал аудита" }
+
   ];
 
   return (
